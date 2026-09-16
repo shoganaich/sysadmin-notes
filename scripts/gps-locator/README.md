@@ -20,6 +20,7 @@ gps-locator/
 This utility does not communicate directly with the GPS receiver.
 
 It depends on an external GPS application that writes NMEA data to a log file, for example:
+
 ```text
 C:\Logs\gps.log
 ```
