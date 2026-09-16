@@ -1,6 +1,6 @@
 # GPS Locator
 
-Windows utility that retrieves the latest GPS coordinates from a log file on a remote computer and opens the location in Google Maps.
+Small Windows utility that reads the latest GPS coordinates from a log file on a remote computer and opens the location in Google Maps.
 
 ## Files
 
