@@ -149,3 +149,10 @@ sysadmin-notes/
 This repository is intended as a personal knowledge base for system administration, troubleshooting, automation, and homelab topics.
 
 All examples, case studies, and configurations have been sanitized and generalized to remove sensitive or proprietary information.
+
+## License
+
+This work is licensed under the
+[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+
+You are free to share and adapt the contents of this repository for any purpose, provided appropriate credit is given.
