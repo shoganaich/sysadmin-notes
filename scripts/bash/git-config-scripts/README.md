@@ -1,35 +1,29 @@
 # Git Configuration Scripts
 
-This directory contains small Bash scripts for configuring Git and related repository settings in a consistent way.
+Bash scripts for setting up Git on my Linux machines.
+
+They cover the basic git global config, SSH authentication, commit signing, aliases, and repository remotes.
 
 ## Contents
 
-- `git-config.sh` — sets the default Git editor and global user identity.
-- `git-config-ssh.sh` — configures SSH-related Git settings and key usage helpers.
-- `git-config-commit.sh` — sets commit-related defaults such as templates or hooks.
-- `git-config-rules.sh` — applies repository rules and standard configuration preferences.
-- `git-config-branch.sh` — configures branch naming and branch-related defaults.
+| Script | Purpose |
+|---|---|
+| `configure-git.sh` | Configures global Git identity, SSH, commit signing, Git defaults, and aliases |
+| `configure-remotes.sh` | Configures the GitHub and GitLab remotes for `sysadmin-notes` |
 
-## Purpose
+## Requirements
 
-These scripts are intended to simplify the setup of standard Git configuration for local machines or servers, especially when aligning environments to a common workflow.
+- Git
+- OpenSSH
+- Bash
+- An existing SSH key pair for Git authentication
+- An existing SSH key pair for Git commit signing
 
-## Typical usage
+Expected SSH keys:
 
-Run any script directly:
+```text
+~/.ssh/id_gitauth
+~/.ssh/id_gitauth.pub
 
-```bash
-./git-config.sh
-```
-
-Or source it if it is designed to export environment variables or shell helpers:
-
-```bash
-source ./git-config.sh
-```
-
-## Notes
-
-- Review each script before running it, especially if it changes global Git settings.
-- Some scripts may require permissions or additional setup such as SSH keys or repository initialization.
-- These scripts are meant to be simple and modular, making it easy to reuse or adjust individual configuration steps.
+~/.ssh/id_gitsigh
+~/.ssh/id_gitsigh.pub
