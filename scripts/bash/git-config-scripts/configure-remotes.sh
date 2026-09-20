@@ -8,8 +8,10 @@ echo "Configuring Git remotes..."
 
 # Remove existing remotes if present
 git remote remove origin 2>/dev/null || true
+git remote remove github 2>/dev/null || true
 git remote remove gitlab 2>/dev/null || true
 git remote remove forgejo 2>/dev/null || true
+
 # Add remotes
 git remote add github "$GITHUB_REMOTE"
 git remote add gitlab "$GITLAB_REMOTE"
