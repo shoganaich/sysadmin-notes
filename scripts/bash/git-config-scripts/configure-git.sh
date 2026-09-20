@@ -12,9 +12,6 @@ AUTH_KEY="$SSH_DIR/id_gitauth"
 SIGN_KEY="$SSH_DIR/id_gitsigh"
 SSH_CONFIG="$SSH_DIR/config"
 
-GITHUB_REMOTE="git@github.com:shoganaich/sysadmin-notes.git"
-GITLAB_REMOTE="git@gitlab.com:shoganaich/sysadmin-notes.git"
-
 echo "==> Configuring Git"
 echo
 
@@ -81,6 +78,13 @@ Host gitlab.com
     IdentityFile $AUTH_KEY
     IdentitiesOnly yes
 
+Host git.wyrmnet.link
+    HostName git.wyrmnet.link
+    Port 222
+    User git
+    IdentityFile $AUTH_KEY
+    IdentitiesOnly yes
+
 # END SYSADMIN-NOTES GIT CONFIG
 EOF
 
@@ -134,6 +138,12 @@ echo "  $AUTH_KEY"
 echo
 echo "SSH signing:"
 echo "  $SIGN_KEY"
+
+echo
+echo "Git remotes:"
+echo "  GitHub:  $GITHUB_REMOTE"
+echo "  GitLab:  $GITLAB_REMOTE"
+echo "  Wyrmnet: $WYRMNET_REMOTE"
 
 echo
 echo "Done."
