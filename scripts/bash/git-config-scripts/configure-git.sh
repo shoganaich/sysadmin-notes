@@ -140,10 +140,4 @@ echo "SSH signing:"
 echo "  $SIGN_KEY"
 
 echo
-echo "Git remotes:"
-echo "  GitHub:  $GITHUB_REMOTE"
-echo "  GitLab:  $GITLAB_REMOTE"
-echo "  Wyrmnet: $WYRMNET_REMOTE"
-
-echo
 echo "Done."
