@@ -1,4 +1,16 @@
-# sysadmin-notes
+<p align="center">
+  <img
+    src="https://capsule-render.vercel.app/api?type=venom&color=0:111827,100:374151&height=180&section=header&text=sysadmin-notes&fontSize=45&fontColor=ffffff"
+    alt="sysadmin-notes"
+  />
+</p>
+
+[![License](https://img.shields.io/badge/License-CC%20BY%204.0-181717.svg)](https://creativecommons.org/licenses/by/4.0/)
+![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
+![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?logo=powershell&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 
 Knowledge base documenting infrastructure, windows, linux, networking, automation, and troubleshooting topics encountered in both professional and personal environments.
 
