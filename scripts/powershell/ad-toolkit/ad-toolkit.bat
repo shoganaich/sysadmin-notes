@@ -78,7 +78,7 @@ if not exist "%script_path%" (
     goto script_finished
 )
 
-powershell.exe -NoLogo -NoProfile -File "%script_path%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%script_path%"
 
 if errorlevel 1 (
     echo.
