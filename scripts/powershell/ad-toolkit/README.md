@@ -239,7 +239,7 @@ Workstation troubleshooting, networking diagnostics, Microsoft 365 administratio
 
 Missing or planned functions for the toolkit menu:
 
-- [ ] Check LAPS information
+- [X] Check LAPS information
 - [ ] Check DNS and DHCP records
 - [ ] Repair DNS registration
 - [ ] Remove stale DNS records
