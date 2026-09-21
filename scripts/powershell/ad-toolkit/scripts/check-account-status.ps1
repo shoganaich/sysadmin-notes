@@ -118,9 +118,13 @@ elseif ($User.PasswordExpired) {
     $PasswordExpiration = "Expired"
     $PasswordHasProblem = $true
 }
-elseif ($PasswordExpiryRaw -and [long]$PasswordExpiryRaw -gt 0) {
+elseif (
+    $null -ne $PasswordExpiryRaw -and
+    [long]$PasswordExpiryRaw -gt 0 -and
+    [long]$PasswordExpiryRaw -ne [long]::MaxValue
+) {
     try {
-        $PasswordExpiryDate = :FromFileTime(
+        $PasswordExpiryDate = [DateTime]::FromFileTime(
             [long]$PasswordExpiryRaw
         )
 
