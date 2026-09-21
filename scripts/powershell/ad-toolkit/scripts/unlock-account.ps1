@@ -6,7 +6,7 @@
     Checks and unlocks an Active Directory user account.
 
 .DESCRIPTION
-    Displays relevant account information, checks the lockout and
+    Displays the relevant account information, checks the lockout and
     password status, requests confirmation, unlocks the account,
     and verifies the result.
 
@@ -16,18 +16,13 @@
 
 $ErrorActionPreference = "Stop"
 
-# Import the Active Directory module.
 try {
     Import-Module ActiveDirectory -ErrorAction Stop
 }
 catch {
     Write-Host ""
-    Write-Host "Failed to import the Active Directory module." `
-        -ForegroundColor Red
-
-    Write-Host "Details: $($_.Exception.Message)" `
-        -ForegroundColor DarkRed
-
+    Write-Host "Failed to import the Active Directory module." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
     exit 1
 }
 
@@ -36,240 +31,291 @@ Write-Host "Unlock Active Directory Account" -ForegroundColor Cyan
 Write-Host "===============================" -ForegroundColor Cyan
 Write-Host ""
 
-# Request the username.
-$Username = Read-Host "Enter the username to check"
+$Username = Read-Host "Enter the username"
 
 if (-not $Username -or $Username.Trim().Length -eq 0) {
     Write-Host ""
-    Write-Host "Please enter a valid username." `
-        -ForegroundColor Yellow
-
+    Write-Host "Please enter a valid username." -ForegroundColor Yellow
     exit 1
 }
 
 $Username = $Username.Trim()
 
-# Retrieve the account.
 try {
     $User = Get-ADUser `
         -Identity $Username `
         -Properties DisplayName,
+                    UserPrincipalName,
+                    Mail,
+                    Title,
+                    Department,
+                    Manager,
+                    Description,
                     Enabled,
                     LockedOut,
-                    Description,
-                    LastLogonDate,
                     PasswordExpired,
                     PasswordNeverExpires,
                     PasswordLastSet,
                     AccountExpirationDate,
+                    LastLogonDate,
                     msDS-UserPasswordExpiryTimeComputed,
                     extensionAttribute5 `
         -ErrorAction Stop
 }
 catch {
     Write-Host ""
-    Write-Host "User '$Username' was not found in Active Directory." `
-        -ForegroundColor Red
-
-    Write-Host "Details: $($_.Exception.Message)" `
-        -ForegroundColor DarkRed
-
+    Write-Host "User '$Username' was not found in Active Directory." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
     exit 1
 }
 
-# Format optional properties.
-if ($User.DisplayName) {
-    $DisplayName = $User.DisplayName
-}
-else {
-    $DisplayName = "N/A"
-}
+$ManagerName = "N/A"
 
-if ($User.Description) {
-    $Description = $User.Description
-}
-else {
-    $Description = "N/A"
-}
-
-if ($User.extensionAttribute5) {
-    $Attribute5 = $User.extensionAttribute5
-}
-else {
-    $Attribute5 = "N/A"
-}
-
-if ($User.LastLogonDate) {
-    $LastLogon = $User.LastLogonDate.ToString("dd-MM-yyyy HH:mm")
-}
-else {
-    $LastLogon = "N/A"
-}
-
-if ($User.PasswordLastSet) {
-    $PasswordLastSet = $User.PasswordLastSet.ToString(
-        "dd-MM-yyyy HH:mm"
-    )
-}
-else {
-    $PasswordLastSet = "N/A"
-}
-
-if ($User.AccountExpirationDate) {
-    $AccountExpiration = $User.AccountExpirationDate.ToString(
-        "dd-MM-yyyy HH:mm"
-    )
-}
-else {
-    $AccountExpiration = "Never"
-}
-
-# Determine password expiration.
-$PasswordExpiryRaw = $User."msDS-UserPasswordExpiryTimeComputed"
-$PasswordExpiryDate = $null
-
-if (
-    $null -ne $PasswordExpiryRaw -and
-    [long]$PasswordExpiryRaw -gt 0
-) {
+if ($User.Manager) {
     try {
-        $PasswordExpiryDate =
-            [System.DateTimeOffset]::FromFileTime(
-                [long]$PasswordExpiryRaw
-            ).LocalDateTime
+        $Manager = Get-ADUser `
+            -Identity $User.Manager `
+            -Properties DisplayName `
+            -ErrorAction Stop
+
+        if ($Manager.DisplayName) {
+            $ManagerName = $Manager.DisplayName
+        }
     }
     catch {
-        $PasswordExpiryDate = $null
+        $ManagerName = "Unable to retrieve"
     }
 }
+
+$DisplayName = if ($User.DisplayName) {
+    $User.DisplayName
+}
+else {
+    "N/A"
+}
+
+$UPN = if ($User.UserPrincipalName) {
+    $User.UserPrincipalName
+}
+else {
+    "N/A"
+}
+
+$Email = if ($User.Mail) {
+    $User.Mail
+}
+else {
+    "N/A"
+}
+
+$Title = if ($User.Title) {
+    $User.Title
+}
+else {
+    "N/A"
+}
+
+$Department = if ($User.Department) {
+    $User.Department
+}
+else {
+    "N/A"
+}
+
+$Description = if ($User.Description) {
+    $User.Description
+}
+else {
+    "N/A"
+}
+
+$Attribute5 = if ($User.extensionAttribute5) {
+    $User.extensionAttribute5
+}
+else {
+    "N/A"
+}
+
+$PasswordLastSet = if ($User.PasswordLastSet) {
+    $User.PasswordLastSet.ToString("dd-MM-yyyy HH:mm")
+}
+else {
+    "N/A"
+}
+
+$AccountExpiration = if ($User.AccountExpirationDate) {
+    $User.AccountExpirationDate.ToString("dd-MM-yyyy HH:mm")
+}
+else {
+    "Never"
+}
+
+$LastLogon = if ($User.LastLogonDate) {
+    $User.LastLogonDate.ToString("dd-MM-yyyy HH:mm")
+}
+else {
+    "N/A"
+}
+
+$PasswordExpiryRaw = $User."msDS-UserPasswordExpiryTimeComputed"
 
 if ($User.PasswordNeverExpires) {
     $PasswordExpiration = "Never expires"
-    $PasswordHasExpired = $false
+    $PasswordHasProblem = $false
 }
 elseif ($User.PasswordExpired) {
     $PasswordExpiration = "Expired"
-    $PasswordHasExpired = $true
+    $PasswordHasProblem = $true
 }
-elseif ($PasswordExpiryDate) {
-    $PasswordExpiration = $PasswordExpiryDate.ToString(
-        "dd-MM-yyyy HH:mm"
-    )
+elseif (
+    $null -ne $PasswordExpiryRaw -and
+    [long]$PasswordExpiryRaw -gt 0 -and
+    [long]$PasswordExpiryRaw -ne [long]::MaxValue
+) {
+    try {
+        $PasswordExpiryDate = [DateTime]::FromFileTime(
+            [long]$PasswordExpiryRaw
+        )
 
-    $PasswordHasExpired = $PasswordExpiryDate -lt (Get-Date)
+        $PasswordExpiration = $PasswordExpiryDate.ToString(
+            "dd-MM-yyyy HH:mm"
+        )
+
+        $PasswordHasProblem = $PasswordExpiryDate -lt (Get-Date)
+    }
+    catch {
+        $PasswordExpiration = "N/A"
+        $PasswordHasProblem = $false
+    }
 }
 else {
     $PasswordExpiration = "N/A"
-    $PasswordHasExpired = $false
+    $PasswordHasProblem = $false
 }
 
-# Format account states.
-if ($User.Enabled) {
-    $AccountStatus = "Enabled"
+$EnabledText = if ($User.Enabled) {
+    "Yes"
 }
 else {
-    $AccountStatus = "Disabled"
+    "No"
+}
+
+$LockedText = if ($User.LockedOut) {
+    "Yes"
+}
+else {
+    "No"
+}
+
+$PasswordExpiredText = if ($User.PasswordExpired) {
+    "Yes"
+}
+else {
+    "No"
+}
+
+$PasswordNeverExpiresText = if ($User.PasswordNeverExpires) {
+    "Yes"
+}
+else {
+    "No"
+}
+
+Write-Host ""
+Write-Host "Account Status" -ForegroundColor Cyan
+Write-Host "==============" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host ("{0,-28}: {1}" -f "Display name", $DisplayName)
+Write-Host ("{0,-28}: {1}" -f "Username", $User.SamAccountName)
+Write-Host ("{0,-28}: {1}" -f "User principal name", $UPN)
+Write-Host ("{0,-28}: {1}" -f "Email", $Email)
+Write-Host ("{0,-28}: {1}" -f "Job title", $Title)
+Write-Host ("{0,-28}: {1}" -f "Department", $Department)
+Write-Host ("{0,-28}: {1}" -f "Manager", $ManagerName)
+Write-Host ("{0,-28}: {1}" -f "Description", $Description)
+Write-Host ("{0,-28}: {1}" -f "Attribute 5", $Attribute5)
+Write-Host ""
+
+if ($User.Enabled) {
+    Write-Host ("{0,-28}: {1}" -f "Account enabled", $EnabledText) -ForegroundColor Green
+}
+else {
+    Write-Host ("{0,-28}: {1}" -f "Account enabled", $EnabledText) -ForegroundColor Red
 }
 
 if ($User.LockedOut) {
-    $LockStatus = "Locked"
+    Write-Host ("{0,-28}: {1}" -f "Account locked", $LockedText) -ForegroundColor Red
 }
 else {
-    $LockStatus = "Not locked"
+    Write-Host ("{0,-28}: {1}" -f "Account locked", $LockedText) -ForegroundColor Green
 }
 
-# Display account information.
+if ($User.PasswordExpired) {
+    Write-Host ("{0,-28}: {1}" -f "Password expired", $PasswordExpiredText) -ForegroundColor Red
+}
+else {
+    Write-Host ("{0,-28}: {1}" -f "Password expired", $PasswordExpiredText) -ForegroundColor Green
+}
+
+Write-Host ("{0,-28}: {1}" -f "Password never expires", $PasswordNeverExpiresText)
+Write-Host ("{0,-28}: {1}" -f "Password last set", $PasswordLastSet)
+
+if ($PasswordHasProblem) {
+    Write-Host ("{0,-28}: {1}" -f "Password expiration", $PasswordExpiration) -ForegroundColor Red
+}
+else {
+    Write-Host ("{0,-28}: {1}" -f "Password expiration", $PasswordExpiration) -ForegroundColor Green
+}
+
 Write-Host ""
-Write-Host "Account Information" -ForegroundColor Cyan
-Write-Host "===================" -ForegroundColor Cyan
+Write-Host ("{0,-28}: {1}" -f "Account expiration", $AccountExpiration)
+Write-Host ("{0,-28}: {1}" -f "Last logon", $LastLogon)
+
 Write-Host ""
+Write-Host "Status Summary" -ForegroundColor Cyan
+Write-Host "==============" -ForegroundColor Cyan
 
-Write-Host ("{0,-25}: {1}" -f "Display name", $DisplayName)
-Write-Host ("{0,-25}: {1}" -f "Username", $User.SamAccountName)
-Write-Host ("{0,-25}: {1}" -f "Description", $Description)
-Write-Host ("{0,-25}: {1}" -f "Attribute 5", $Attribute5)
-Write-Host ""
+$Problems = @()
 
-if ($User.Enabled) {
-    Write-Host (
-        "{0,-25}: {1}" -f "Account status", $AccountStatus
-    ) -ForegroundColor Green
-}
-else {
-    Write-Host (
-        "{0,-25}: {1}" -f "Account status", $AccountStatus
-    ) -ForegroundColor Red
-}
-
-if ($User.LockedOut) {
-    Write-Host (
-        "{0,-25}: {1}" -f "Lock status", $LockStatus
-    ) -ForegroundColor Red
-}
-else {
-    Write-Host (
-        "{0,-25}: {1}" -f "Lock status", $LockStatus
-    ) -ForegroundColor Green
-}
-
-if ($PasswordHasExpired) {
-    Write-Host (
-        "{0,-25}: {1}" -f
-        "Password expiration",
-        $PasswordExpiration
-    ) -ForegroundColor Red
-}
-else {
-    Write-Host (
-        "{0,-25}: {1}" -f
-        "Password expiration",
-        $PasswordExpiration
-    ) -ForegroundColor Green
-}
-
-Write-Host (
-    "{0,-25}: {1}" -f
-    "Password last set",
-    $PasswordLastSet
-)
-
-Write-Host (
-    "{0,-25}: {1}" -f
-    "Account expiration",
-    $AccountExpiration
-)
-
-Write-Host ("{0,-25}: {1}" -f "Last logon", $LastLogon)
-
-# Report relevant conditions.
 if (-not $User.Enabled) {
-    Write-Host ""
-    Write-Host (
-        "[WARNING] The account is disabled. Unlocking it will not enable it."
-    ) -ForegroundColor Yellow
+    $Problems += "The account is disabled."
 }
 
-if ($PasswordHasExpired) {
-    Write-Host ""
-    Write-Host (
-        "[WARNING] The password is expired. Unlocking the account will not reset it."
-    ) -ForegroundColor Yellow
+if ($User.LockedOut) {
+    $Problems += "The account is locked."
 }
 
-# Stop when no unlock is required.
-if (-not $User.LockedOut) {
-    Write-Host ""
-    Write-Host "No action required. The account is not locked." `
-        -ForegroundColor Green
+if ($User.PasswordExpired -or $PasswordHasProblem) {
+    $Problems += "The password is expired."
+}
 
+if (
+    $User.AccountExpirationDate -and
+    $User.AccountExpirationDate -lt (Get-Date)
+) {
+    $Problems += "The account has expired."
+}
+
+if ($Problems.Count -eq 0) {
+    Write-Host ""
+    Write-Host "No action required. The account is not locked." -ForegroundColor Green
     exit 0
 }
 
-# Request confirmation.
 Write-Host ""
-Write-Host (
-    "This action will unlock '$($User.SamAccountName)'."
-) -ForegroundColor Yellow
+foreach ($Problem in $Problems) {
+    Write-Host "[WARNING] $Problem" -ForegroundColor Yellow
+}
+
+if (-not $User.LockedOut) {
+    Write-Host ""
+    Write-Host "No action required. The account is not locked." -ForegroundColor Green
+    exit 0
+}
+
+Write-Host ""
+Write-Host ("This action will unlock '$($User.SamAccountName)'.") -ForegroundColor Yellow
 
 $Confirmation = Read-Host "Unlock this account? (Y/N)"
 
@@ -279,7 +325,6 @@ if ($Confirmation.Trim().ToUpper() -notin @("Y", "YES")) {
     exit 0
 }
 
-# Unlock and verify the account.
 try {
     Unlock-ADAccount `
         -Identity $User.DistinguishedName `
@@ -296,9 +341,7 @@ try {
     Write-Host ""
 
     if (-not $UpdatedUser.LockedOut) {
-        Write-Host (
-            "Account '$($User.SamAccountName)' was unlocked successfully."
-        ) -ForegroundColor Green
+        Write-Host ("Account '$($User.SamAccountName)' was unlocked successfully.") -ForegroundColor Green
 
         Write-Host ""
         Write-Host "Ticket Summary" -ForegroundColor Cyan
@@ -308,29 +351,21 @@ try {
         Write-Host "Action performed : Account unlocked"
         Write-Host "Result            : Successful"
 
-        if ($PasswordHasExpired) {
-            Write-Host "Additional issue : Password expired" `
-                -ForegroundColor Yellow
+        if ($PasswordHasProblem) {
+            Write-Host "Additional issue : Password expired" -ForegroundColor Yellow
         }
         else {
             Write-Host "Additional issue : None"
         }
     }
     else {
-        Write-Host (
-            "The unlock command completed, but the account still appears locked."
-        ) -ForegroundColor Yellow
+        Write-Host "The unlock command completed, but the account still appears locked." -ForegroundColor Yellow
     }
 }
 catch {
     Write-Host ""
-    Write-Host (
-        "Failed to unlock account '$($User.SamAccountName)'."
-    ) -ForegroundColor Red
-
-    Write-Host "Details: $($_.Exception.Message)" `
-        -ForegroundColor DarkRed
-
+    Write-Host "Failed to unlock account '$($User.SamAccountName)'." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
     exit 1
 }
 
