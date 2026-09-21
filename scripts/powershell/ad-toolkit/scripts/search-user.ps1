@@ -13,60 +13,50 @@
     - Enabled status
     - Lockout status
     - Password expiration
-    - Extension Attribute 5
+    - Phone number
 #>
 
 $ErrorActionPreference = "Stop"
 
-# Import the Active Directory module.
 try {
     Import-Module ActiveDirectory -ErrorAction Stop
 }
 catch {
     Write-Host ""
-    Write-Host "Failed to import the Active Directory module." `
-        -ForegroundColor Red
-
-    Write-Host "Details: $($_.Exception.Message)" `
-        -ForegroundColor DarkRed
-
+    Write-Host "Failed to import the Active Directory module." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
     exit 1
 }
 
-# Request a username or display name.
 $SearchInput = Read-Host "Enter a username or name to search"
 
-if (-not $SearchInput -or $SearchInput.Trim().Length -eq 0) {
+if ([string]::IsNullOrWhiteSpace($SearchInput)) {
     Write-Host ""
-    Write-Host "Please enter a valid username or name." `
-        -ForegroundColor Yellow
-
+    Write-Host "Please enter a valid username or name." -ForegroundColor Yellow
     exit 1
 }
 
 try {
-    # Escape apostrophes before using the input in the AD filter.
     $SafeSearchInput = $SearchInput.Trim().Replace("'", "''")
 
-    # Search both the username and display name properties.
     $Users = Get-ADUser `
         -Filter "SamAccountName -like '*$SafeSearchInput*' -or DisplayName -like '*$SafeSearchInput*'" `
-        -Properties SamAccountName,
-                    DisplayName,
-                    Title,
-                    Enabled,
-                    LockedOut,
-                    PasswordNeverExpires,
-                    PasswordExpired,
-                    msDS-UserPasswordExpiryTimeComputed,
-                    extensionAttribute5 `
+        -Properties @(
+            "SamAccountName"
+            "DisplayName"
+            "Title"
+            "Enabled"
+            "LockedOut"
+            "PasswordNeverExpires"
+            "PasswordExpired"
+            "msDS-UserPasswordExpiryTimeComputed"
+            "extensionAttribute5"
+        ) `
         -ErrorAction Stop
 
     if (-not $Users) {
         Write-Host ""
-        Write-Host "No users matching '$SearchInput' were found." `
-            -ForegroundColor Yellow
-
+        Write-Host "No users matching '$SearchInput' were found." -ForegroundColor Yellow
         exit 0
     }
 
@@ -85,7 +75,7 @@ try {
             "Enabled",
             "Locked",
             "Password Expiration",
-            "Attribute 5"
+            "Phone Number"
     ) -ForegroundColor Cyan
 
     Write-Host ("-" * 175) -ForegroundColor DarkGray
@@ -98,22 +88,20 @@ try {
         $LockedOut = $User.LockedOut
         $Attribute5 = $User.extensionAttribute5
 
-        # Replace empty values to preserve the table layout.
-        if (-not $DisplayName -or $DisplayName.Trim().Length -eq 0) {
+        if ([string]::IsNullOrWhiteSpace($DisplayName)) {
             $DisplayName = "N/A"
         }
 
-        if (-not $Title -or $Title.Trim().Length -eq 0) {
+        if ([string]::IsNullOrWhiteSpace($Title)) {
             $Title = "N/A"
         }
 
-        if (-not $Attribute5 -or $Attribute5.Trim().Length -eq 0) {
+        if ([string]::IsNullOrWhiteSpace($Attribute5)) {
             $Attribute5 = "N/A"
         }
 
         $ExpiryRaw = $User."msDS-UserPasswordExpiryTimeComputed"
 
-        # Determine password expiration status.
         if ($User.PasswordNeverExpires) {
             $ExpiryText = "Never expires"
             $ExpiryProblem = $false
@@ -122,10 +110,14 @@ try {
             $ExpiryText = "Expired"
             $ExpiryProblem = $true
         }
-        elseif ($null -ne $ExpiryRaw -and [long]$ExpiryRaw -gt 0) {
+        elseif (
+            $null -ne $ExpiryRaw -and
+            [Int64]$ExpiryRaw -gt 0 -and
+            [Int64]$ExpiryRaw -ne [Int64]::MaxValue
+        ) {
             try {
-                $ExpiryDate = :FromFileTime(
-                    [long]$ExpiryRaw
+                $ExpiryDate = [DateTime]::FromFileTime(
+                    [Int64]$ExpiryRaw
                 )
 
                 $ExpiryText = $ExpiryDate.ToString(
@@ -144,7 +136,6 @@ try {
             $ExpiryProblem = $false
         }
 
-        # Determine whether the account has a visible problem.
         $EnabledProblem = -not $Enabled
         $LockedProblem = $LockedOut
 
@@ -161,7 +152,6 @@ try {
             "Green"
         }
 
-        # Username, display name, and title.
         Write-Host (
             "{0,-25} {1,-35} {2,-40}" -f `
                 $Username,
@@ -169,7 +159,6 @@ try {
                 $Title
         ) -ForegroundColor $BaseColor -NoNewline
 
-        # Enabled status.
         $EnabledColor = if ($EnabledProblem) {
             "Red"
         }
@@ -181,7 +170,6 @@ try {
             " {0,-8}" -f $Enabled
         ) -ForegroundColor $EnabledColor -NoNewline
 
-        # Lockout status.
         $LockedColor = if ($LockedProblem) {
             "Red"
         }
@@ -193,7 +181,6 @@ try {
             " {0,-10}" -f $LockedOut
         ) -ForegroundColor $LockedColor -NoNewline
 
-        # Password expiration.
         $ExpiryColor = if ($ExpiryProblem) {
             "Red"
         }
@@ -205,24 +192,18 @@ try {
             " {0,-23}" -f $ExpiryText
         ) -ForegroundColor $ExpiryColor -NoNewline
 
-        # Extension Attribute 5.
         Write-Host (
             " {0,-20}" -f $Attribute5
         ) -ForegroundColor $BaseColor
     }
 
     Write-Host ""
-    Write-Host "Users found: $(@($Users).Count)" `
-        -ForegroundColor DarkGray
+    Write-Host "Users found: $(@($Users).Count)" -ForegroundColor DarkGray
 }
 catch {
     Write-Host ""
-    Write-Host "An error occurred while searching for users." `
-        -ForegroundColor Red
-
-    Write-Host "Details: $($_.Exception.Message)" `
-        -ForegroundColor DarkRed
-
+    Write-Host "An error occurred while searching for users." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
     exit 1
 }
 
