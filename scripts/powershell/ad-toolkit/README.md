@@ -76,6 +76,36 @@ Displays useful computer information from Active Directory, including:
 - Direct group memberships
 - IP address
 
+#### Check LAPS Information
+
+Review Local Administrator Password Solution (LAPS) details for a computer, including:
+
+- Computer account lookup
+- LAPS password expiry information
+- Local administrator account details
+
+### Network / DNS-DHCP Tools
+
+#### Check DNS and DHCP Records
+
+Review relevant DNS and DHCP details for a target device or record, including:
+
+- DNS record resolution
+- DHCP lease information
+- Basic environment validation
+
+#### Repair DNS Registration
+
+Attempt to fix stale or broken DNS records for a selected computer.
+
+#### Remove Stale DNS Records
+
+Identify and remove outdated DNS entries that may no longer be valid.
+
+#### Renew DHCP Lease Remotely
+
+Trigger a DHCP lease refresh on a remote device when appropriate.
+
 ### Administrative Actions
 
 #### Unlock Account
@@ -140,24 +170,32 @@ Menu:
 AD Toolkit
 ==========
 
-User Tools
+User tools
 ----------
-1. Search User
-2. Check Account Status
-3. View Group Memberships
+1. Search user
+2. Check account status
+3. View group memberships
 
-Computer Tools
+Computer tools
 --------------
-4. Search Computer
-5. Test Computer Connectivity
-6. View Computer Details
+4. Search computer
+5. Test computer connectivity
+6. View computer details
+7. Check LAPS information
 
-Administrative Actions
+Network / DNS-DHCP
+------------------
+8. Check DNS and DHCP records
+9. Repair DNS registration
+10. Remove stale DNS records
+11. Renew DHCP lease remotely
+
+Administrative actions
 ----------------------
-7. Unlock Account
-8. Reset Password
+12. Unlock account
+13. Reset password
 
-9. Exit
+14. Exit
 ```
 
 Select an option and follow the prompts. After the script finishes, press any key to return to the menu.
@@ -197,13 +235,15 @@ This project focuses on on-premises Active Directory administration and common S
 
 Workstation troubleshooting, networking diagnostics, Microsoft 365 administration, and infrastructure management are intentionally outside the scope of this toolkit.
 
-## Future Ideas
+## To Do
 
-Potential additions:
+Missing or planned functions for the toolkit menu:
 
-- Export results to CSV
-- Account lockout source investigation
-- LAPS password lookup
+- [ ] Check LAPS information
+- [ ] Check DNS and DHCP records
+- [ ] Repair DNS registration
+- [ ] Remove stale DNS records
+- [ ] Renew DHCP lease remotely
 
 ## Disclaimer
 
