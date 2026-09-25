@@ -1,217 +1,55 @@
-# Windows Network Port Cheatsheet
+# Windows Notes
 
-Quick reference sheet for common Windows ports used for Active Directory, DNS, DHCP, remote support, web services, databases, and infrastructure.
+Collection of notes, commands, troubleshooting guides, and reference material for managing and supporting Windows environments.
 
-## Workstation and Remote Support
+## Contents
 
-| Port | Protocol | Service | Typical Use |
-| ---: | :---: | --- | --- |
-| 135 | TCP | RPC Endpoint Mapper | Remote management, WMI, service control |
-| 445 | TCP | SMB | File shares, administrative shares, Group Policy |
-| 3389 | TCP/UDP | Remote Desktop | RDP connections |
-| 5985 | TCP | WinRM HTTP | PowerShell Remoting |
-| 5986 | TCP | WinRM HTTPS | Encrypted PowerShell Remoting |
-| 49152-65535 | TCP | Dynamic RPC | WMI, MMC consoles, service management |
+### Administration
 
-> Modern Windows use `49152-65535` as the default dynamic RPC range. A successful connection to TCP port `135` confirms that the RPC Endpoint Mapper is reachable, but does not guarantee that remote RPC operations will succeed.
+- [Windows Services and Processes](Services-and-Processes.md)
+- [Windows Event Logs](Event-Logs.md)
 
-## DNS and DHCP
+### Active Directory
 
-| Port | Protocol | Service | Typical Use |
-| ---: | :---: | --- | --- |
-| 53 | TCP/UDP | DNS | Name resolution and DNS zone transfers |
-| 67 | UDP | DHCP Server | Receives DHCP client and relay requests |
-| 68 | UDP | DHCP Client | Receives DHCP offers and acknowledgements |
+- [Active Directory](Active-Directory.md)
+- [Group Policy](Group-Policy.md)
+- [Users and Groups](Users-and-Groups.md)
 
-> DHCP normally uses **broadcasts** or **DHCP relay agents**. A normal TCP port test cannot accurately validate UDP ports `67` and `68` .
->
-> ***For DHCP troubleshooting, query the DHCP servers and leases directly instead.***
+### Networking
 
-## Active Directory
+- [Network Ports](Network-Ports.md)
+- [DNS](DNS.md)
+- [DHCP](DHCP.md)
+- [Windows Firewall](Firewall.md)
 
-| Port | Protocol | Service | Typical Use |
-| ---: | :---: | --- | --- |
-| 53 | TCP/UDP | DNS | Domain controller discovery and name resolution |
-| 88 | TCP/UDP | Kerberos | Domain authentication |
-| 123 | UDP | Windows Time / NTP | Time synchronization |
-| 135 | TCP | RPC Endpoint Mapper | Active Directory and Windows RPC |
-| 389 | TCP/UDP | LDAP | Directory queries |
-| 445 | TCP | SMB | SYSVOL, Group Policy, and logon scripts |
-| 464 | TCP/UDP | Kerberos password change | Password changes |
-| 636 | TCP | LDAPS | LDAP over TLS |
-| 3268 | TCP | Global Catalog | Forest-wide directory queries |
-| 3269 | TCP | Secure Global Catalog | Global Catalog protected with TLS |
-| 9389 | TCP | Active Directory Web Services | AD PowerShell module and AD Administrative Center |
-| 49152-65535 | TCP | Dynamic RPC | AD replication and other RPC operations |
+### Security and Maintenance
 
-> Not every port is required for Active Directory operations. For example, ports `636` and `3269` are only needed when LDAP or Global Catalog over TLS is configured and used.
+- [Windows Security](Security.md)
+- [Windows Update](Windows-Update.md)
 
-> A successful connection to TCP port `445` only confirms that the SMB service is reachable. It does not confirm authentication, share permissions, NTFS permissions, or access to specific shares.
+### PowerShell and Automation
 
-## Web Services
+- [PowerShell Commands](PowerShell.md)
+- [Scripts](Scripts.md)
 
-| Port | Protocol | Service |
-| ---: | :---: | --- |
-| 80 | TCP | HTTP |
-| 443 | TCP | HTTPS |
-| 8080 | TCP | Common alternate HTTP |
-| 8443 | TCP | Common alternate HTTPS |
+### Troubleshooting
 
-## File Transfer and Remote Shell
+- [Workstation Troubleshooting](Workstation-Troubleshooting.md)
+- [Server Troubleshooting](Server-Troubleshooting.md)
+- [Domain Controller Troubleshooting](DC-Troubleshooting.md)
 
-| Port | Protocol | Service |
-| ---: | :---: | --- |
-| 20 | TCP | FTP data |
-| 21 | TCP | FTP control |
-| 22 | TCP | SSH and SFTP |
-| 23 | TCP | Telnet |
-| 69 | UDP | TFTP |
-| 137 | TCP/UDP | NetBIOS name service |
-| 138 | UDP | NetBIOS datagram |
-| 139 | TCP | NetBIOS session |
+## Purpose
 
-> Telnet is unencrypted and should **never** be used if possible, use only in explicitly authorized legacy environments that don't have access to more secure alternatives.
+This repository serves as a personal knowledge base and quick reference for:
 
-> Windows environments typically use direct SMB over TCP port `445` rather than NetBIOS ports `137-139` .
+- Windows Server administration
+- Active Directory
+- Networking
+- PowerShell
+- Security
+- Troubleshooting
+- Automation
 
-## Email
+## Notes
 
-| Port | Protocol | Service |
-| ---: | :---: | --- |
-| 25 | TCP | SMTP server-to-server |
-| 110 | TCP | POP3 |
-| 143 | TCP | IMAP |
-| 465 | TCP | SMTP over implicit TLS |
-| 587 | TCP | Authenticated SMTP submission |
-| 993 | TCP | IMAP over TLS |
-| 995 | TCP | POP3 over TLS |
-
-## Databases
-
-| Port | Protocol | Service |
-| ---: | :---: | --- |
-| 1433 | TCP | Microsoft SQL Server |
-| 1434 | UDP | SQL Server Browser |
-| 1521 | TCP | Oracle Database |
-| 3306 | TCP | MySQL and MariaDB |
-| 5432 | TCP | PostgreSQL |
-| 6379 | TCP | Redis |
-| 27017 | TCP | MongoDB |
-
-## Monitoring and Infrastructure
-
-| Port | Protocol | Service |
-| ---: | :---: | --- |
-| 161 | UDP | SNMP queries |
-| 162 | UDP | SNMP traps |
-| 514 | TCP/UDP | Syslog |
-| 3000 | TCP | Grafana default |
-| 9090 | TCP | Prometheus default |
-| 10050 | TCP | Zabbix agent |
-| 10051 | TCP | Zabbix server |
-
-## Containers and Kubernetes
-
-| Port | Protocol | Service |
-| ---: | :---: | --- |
-| 2375 | TCP | Docker API without TLS |
-| 2376 | TCP | Docker API with TLS |
-| 6443 | TCP | Kubernetes API |
-
-> Never publicly expose TCP port `2375`. A typical Docker API configuration on this port is not encrypted and may not require authentication, causing security issues to your services.
-
-## PowerShell Useful Commands
-
-### Test a TCP port
-
-```powershell
-Test-NetConnection -ComputerName "COMPUTER-01" -Port 445
-```
-
-### Return a short result
-
-```powershell
-Test-NetConnection -ComputerName "COMPUTER-01" -Port 445 | Select-Object ComputerName,RemoteAddress,RemotePort,TcpTestSucceeded
-```
-
-### Test several TCP ports
-
-```powershell
-$ComputerName="COMPUTER-01"; 135,445,3389,5985,5986 | ForEach-Object { $r=Test-NetConnection -ComputerName $ComputerName -Port $_ -WarningAction SilentlyContinue; [PSCustomObject]@{Computer=$ComputerName;Port=$_;Open=$r.TcpTestSucceeded} }
-```
-
-### Test a domain controller
-
-```powershell
-$DC="DC01"; 53,88,135,389,445,464,636,3268,3269,9389 | ForEach-Object { $r=Test-NetConnection -ComputerName $DC -Port $_ -WarningAction SilentlyContinue;[PSCustomObject]@{DomainController=$DC;Port=$_;Open=$r.TcpTestSucceeded} }
-```
-
-### Show Listening Ports with Process Names
-
-```powershell
-Get-NetTCPConnection -State Listen | ForEach-Object { [PSCustomObject]@{LocalAddress=$_.LocalAddress;LocalPort=$_.LocalPort;ProcessName=(Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName;PID=$_.OwningProcess} } | Sort-Object LocalPort
-```
-
-### Find Process Listening on a specific Port
-
-```powershell
-$Port=445; Get-NetTCPConnection -State Listen -LocalPort $Port | ForEach-Object { [PSCustomObject]@{Port=$_.LocalPort;Process=(Get-Process -Id $_.OwningProcess -EA SilentlyContinue).ProcessName;PID=$_.OwningProcess} }
-```
-
----
-
-### CMD alternative
-
-```cmd
-netstat -ano
-```
-
-Filter the result by port:
-
-```cmd
-netstat -ano | findstr ":445"
-```
-
-## Recommended Workstation Test
-
-For an ordinary domain PC or Laptop, test:
-
-```text
-Ping
-RPC TCP/135
-SMB TCP/445
-RDP TCP/3389
-WinRM HTTP TCP/5985
-WinRM HTTPS TCP/5986
-```
-
-## Recommended Domain Controller Test
-
-For a domain controller, test:
-
-```text
-DNS TCP/53
-Kerberos TCP/88
-RPC TCP/135
-LDAP TCP/389
-SMB TCP/445
-Kerberos Password TCP/464
-LDAPS TCP/636
-Global Catalog TCP/3268
-Secure Global Catalog TCP/3269
-Active Directory Web Services TCP/9389
-```
-
-## Important Limitations
-
-An open TCP port only confirms that a service accepted a TCP connection.
-
-It does not confirm:
-
-* Successful authentication
-* Application health
-* Valid certificates
-* Correct authorization
-* UDP availability
-* Full RPC functionality
-* Correct DNS or DHCP configuration
+The content is organized into separate documents to keep the repository easy to navigate and maintain. New troubleshooting guides, scripts, commands, and operational notes can be added over time without making the README difficult to read.
