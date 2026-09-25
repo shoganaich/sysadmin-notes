@@ -4,39 +4,44 @@ Collection of notes, commands, troubleshooting guides, and reference material fo
 
 ## Contents
 
+### Common Commands
+
+- [Common Windows Commands](common-commands.md)
+
 ### Administration
 
-- [Windows Services and Processes](Services-and-Processes.md)
-- [Windows Event Logs](Event-Logs.md)
+- [Windows Services and Processes](services-and-processes.md)
+- [Windows Event Logs](event-logs.md)
 
 ### Active Directory
 
-- [Active Directory](Active-Directory.md)
-- [Group Policy](Group-Policy.md)
-- [Users and Groups](Users-and-Groups.md)
+- [Active Directory](active-directory.md)
+- [Group Policy](group-policy.md)
+- [Users and Groups](users-and-groups.md)
 
 ### Networking
 
-- [Network Ports](Network-Ports.md)
-- [DNS](DNS.md)
-- [DHCP](DHCP.md)
-- [Windows Firewall](Firewall.md)
+- [Network Port Cheatsheet](network-port-cheatsheet.md)
+- [Network Ports](network-ports.md)
+- [DNS](dns.md)
+- [DHCP](dhcp.md)
+- [Windows Firewall](firewall.md)
 
 ### Security and Maintenance
 
-- [Windows Security](Security.md)
-- [Windows Update](Windows-Update.md)
+- [Windows Security](security.md)
+- [Windows Update](windows-update.md)
 
 ### PowerShell and Automation
 
-- [PowerShell Commands](PowerShell.md)
-- [Scripts](Scripts.md)
+- [PowerShell Commands](powershell.md)
+- [Scripts](scripts.md)
 
 ### Troubleshooting
 
-- [Workstation Troubleshooting](Workstation-Troubleshooting.md)
-- [Server Troubleshooting](Server-Troubleshooting.md)
-- [Domain Controller Troubleshooting](DC-Troubleshooting.md)
+- [Workstation Troubleshooting](workstation-troubleshooting.md)
+- [Server Troubleshooting](server-troubleshooting.md)
+- [Domain Controller Troubleshooting](dc-troubleshooting.md)
 
 ## Purpose
 
