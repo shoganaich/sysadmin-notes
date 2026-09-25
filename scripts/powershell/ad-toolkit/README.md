@@ -240,7 +240,7 @@ Workstation troubleshooting, networking diagnostics, Microsoft 365 administratio
 Missing or planned functions for the toolkit menu:
 
 - [X] Check LAPS information
-- [ ] Check DNS and DHCP records
+- [X] Check DNS and DHCP records
 - [ ] Repair DNS registration
 - [ ] Remove stale DNS records
 - [ ] Renew DHCP lease remotely
