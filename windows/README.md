@@ -32,11 +32,6 @@ Collection of notes, commands, troubleshooting guides, and reference material fo
 - [Windows Security](security.md)
 - [Windows Update](windows-update.md)
 
-### PowerShell and Automation
-
-- [PowerShell Commands](powershell.md)
-- [Scripts](scripts.md)
-
 ### Troubleshooting
 
 - [Workstation Troubleshooting](workstation-troubleshooting.md)
