@@ -38,6 +38,10 @@ Collection of notes, commands, troubleshooting guides, and reference material fo
 - [Server Troubleshooting](server-troubleshooting.md)
 - [Domain Controller Troubleshooting](dc-troubleshooting.md)
 
+### Procedures
+
+- [Procedures](procedures/README.md) — operational Windows procedures, maintenance tasks, and recovery playbooks.
+
 ## Purpose
 
 This repository serves as a personal knowledge base and quick reference for:
