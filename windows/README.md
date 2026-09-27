@@ -40,7 +40,7 @@ Collection of notes, commands, troubleshooting guides, and reference material fo
 
 ### Procedures
 
-- [Procedures](procedures/README.md) — operational Windows procedures, maintenance tasks, and recovery playbooks.
+- [Procedures](procedures/README.md)
 
 ## Purpose
 
