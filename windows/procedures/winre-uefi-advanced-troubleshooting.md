@@ -41,55 +41,55 @@ Start with the problem you can see.
 
 Go to:
 
-- #3-bcdboot-failed
+- [3. BCDBoot Failed](#3-bcdboot-failed)
 
 ### BCDBoot succeeds, but Windows does not start
 
 Go to:
 
-- #4-bcdboot-succeeds-but-windows-does-not-start
+- [4. BCDBoot Succeeds but Windows Does Not Start](#4-bcdboot-succeeds-but-windows-does-not-start)
 
 ### Windows Boot Manager is missing
 
 Go to:
 
-- #5-windows-boot-manager-is-missing
+- [5. Windows Boot Manager Is Missing](#5-windows-boot-manager-is-missing)
 
 ### The computer shows "No bootable device"
 
 Go to:
 
-- #6-no-bootable-device
+- [6. No Bootable Device](#6-no-bootable-device)
 
 ### The computer starts from the wrong disk
 
 Go to:
 
-- #7-the-computer-starts-from-the-wrong-disk
+- [7. The Computer Starts from the Wrong Disk](#7-the-computer-starts-from-the-wrong-disk)
 
 ### Windows starts loading but fails before sign-in
 
 Go to:
 
-- #20-windows-starts-loading-but-fails-before-sign-in
+- [20. Windows Starts Loading but Fails Before Sign-In](#20-windows-starts-loading-but-fails-before-sign-in)
 
 ### Automatic Repair repeats continuously
 
 Go to:
 
-- #12-automatic-repair-loop
+- [12. Automatic Repair Loop](#12-automatic-repair-loop)
 
 ### The problem started after an update
 
 Go to:
 
-- #13-startup-failure-after-a-windows-update
+- [13. Startup Failure After a Windows Update](#13-startup-failure-after-a-windows-update)
 
 ### The problem started after cloning or replacing a disk
 
 Go to:
 
-- #14-startup-failure-after-disk-cloning-or-replacement
+- [14. Startup Failure After Disk Cloning or Replacement](#14-startup-failure-after-disk-cloning-or-replacement)
 
 ---
 
