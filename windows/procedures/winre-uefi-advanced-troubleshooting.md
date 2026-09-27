@@ -2,7 +2,7 @@
 
 Use this guide when the main UEFI boot recovery procedure does not fix the problem.
 
-Before using this guide, complete the standard recovery steps:
+Before using this guide, complete the [standard recovery steps](winre-uefi-recovery.md):
 
 1. Identify the correct Windows disk.
 2. Find the Windows volume.
