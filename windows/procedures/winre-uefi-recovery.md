@@ -1,64 +1,84 @@
 # Windows UEFI Boot Recovery
 
-## Purpose
+Use this procedure to repair a Windows installation that no longer starts on a computer configured for **UEFI boot with a GPT disk**.
 
-Use this procedure to repair a Windows installation that no longer starts on a UEFI computer using a GPT disk.
+The primary goal is to identify the correct Windows and EFI partitions, rebuild the UEFI boot files, and test Windows. File-system and Windows image repairs should only be performed if rebuilding the boot files does not resolve the issue.
 
-The main goal is to identify the correct Windows and EFI partitions, rebuild the Windows boot files, and test the result. File-system and Windows image repairs should only be performed if rebuilding the boot files does not resolve the issue.
+> [!IMPORTANT]
+> This procedure applies only to **UEFI systems using GPT disks**.  
+> Do not use it as a BIOS or MBR recovery procedure.
+
+> [!WARNING]
+> Selecting the wrong disk or partition can make another Windows installation or operating system unbootable.
+>
+> Do not use the following DiskPart commands:
+>
+> - `clean`
+> - `format`
+> - `delete partition`
+> - `convert`
+
+---
 
 ## Recovery Order
 
-1. Identify the Windows disk.
-2. Locate the Windows volume and EFI System Partition.
-3. Rebuild the UEFI boot files using BCDBoot.
-4. Restart the computer and test Windows.
-5. Check the Windows file system if the issue remains.
-6. Repair the offline Windows image and system files if required.
-7. Record the results and escalate based on the remaining startup error.
+1. Open Command Prompt in the Windows Recovery Environment.
+2. Identify the correct physical disk.
+3. Assign `W:` to the Windows volume.
+4. Assign `S:` to the EFI System Partition.
+5. Validate both volumes.
+6. Rebuild the UEFI boot files with BCDBoot.
+7. Restart and test Windows.
+8. Run CHKDSK, DISM, and SFC only if required.
+9. Record the results and escalate using the exact remaining error.
 
-> [!IMPORTANT]
-> This procedure applies to UEFI systems using GPT disks. Do not use it as a BIOS or MBR recovery procedure.
+Stop the procedure once Windows starts normally.
 
 ---
 
 ## Temporary Drive Letters
 
-The following drive letters are used throughout this procedure:
+This procedure uses the following temporary drive letters:
 
 - `W:` for the Windows volume
 - `S:` for the EFI System Partition
 
-The letters are assigned temporarily in the Windows Recovery Environment.
+Drive letters in the Windows Recovery Environment may differ from the letters used when Windows starts normally.
 
-Drive letters in WinRE often differ from the letters used when Windows starts normally. Never assume that Windows is installed on `C:`.
+Never assume that Windows is installed on `C:`.
 
-Before running any repair command, verify that:
-
-- `W:` contains the intended Windows installation.
-- `S:` is the correct FAT32 EFI System Partition.
-
-If either letter is already in use, choose another unused letter and replace it consistently in every related command.
+If either letter is already in use, choose another unused letter and replace it consistently in all related commands.
 
 ---
 
 ## Before You Start
 
-- Confirm that the computer normally starts in UEFI mode.
-- Disconnect unnecessary USB drives and external disks.
-- Keep the Windows installation media connected if WinRE was started from it.
-- Obtain the BitLocker recovery key if the Windows volume is encrypted.
 - Record the exact startup error.
-- Record any recent Windows updates, firmware changes, disk replacements, cloning operations, or partition changes.
-- Verify the selected disk and volumes before making changes.
+- Record any recent updates, firmware changes, disk replacements, cloning operations, or partition changes.
+- Disconnect unnecessary USB drives and external disks.
+- Keep the Windows installation media connected if the recovery environment was started from it.
+- Obtain the BitLocker recovery key if the Windows volume is encrypted.
+- Confirm that the computer normally starts in UEFI mode.
+- Confirm that the internal disk is detected by the firmware.
+- Verify every disk and volume before making changes.
 - Restart and test Windows after each repair stage.
-- Stop the procedure once Windows starts normally.
 
-> [!WARNING]
-> Do not use `clean`, `format`, `delete partition`, or `convert` in DiskPart. These commands can destroy data or make the installation unbootable.
+### BitLocker
+
+If the Windows volume is protected by BitLocker, unlock it using the approved recovery-key process.
+
+Do not:
+
+- Disable BitLocker without authorization.
+- Decrypt the Windows volume as part of routine boot recovery.
+- Clear the TPM.
+- Change TPM or Secure Boot settings unless an approved procedure requires it.
+
+A boot-file or firmware change may cause another BitLocker recovery prompt during the next startup.
 
 ---
 
-## 1. Open Command Prompt in WinRE
+## 1. Open Command Prompt
 
 From the Windows Recovery Environment, select:
 
@@ -72,21 +92,6 @@ If the computer was started from Windows installation media, select:
 Repair your computer > Troubleshoot > Advanced options > Command Prompt
 ```
 
-### BitLocker-protected computers
-
-If the Windows volume is protected by BitLocker, unlock it using the approved recovery-key process.
-
-After unlocking the volume, verify that the Windows directory is accessible.
-
-Do not:
-
-- Disable BitLocker without authorization.
-- Decrypt the Windows volume as part of routine boot recovery.
-- Clear the TPM.
-- Change TPM or Secure Boot settings unless an approved procedure requires it.
-
-A boot-file or firmware change may cause another BitLocker recovery prompt during the next startup.
-
 ---
 
 ## 2. Identify the Windows Disk
@@ -97,7 +102,7 @@ Start DiskPart:
 diskpart
 ```
 
-List the available physical disks:
+List the physical disks:
 
 ```cmd
 list disk
@@ -108,11 +113,14 @@ Identify the internal Windows disk using:
 - Disk size
 - GPT status
 - Number and size of partitions
-- Connected installation media
-- Connected external disks
 - Number of internal disks
+- Connected installation media
+- Connected USB or external disks
 
-An asterisk in the `GPT` column means that the disk uses GPT. GPT is normally used with UEFI, but it does not confirm that the firmware is currently configured for UEFI boot.
+An asterisk in the `GPT` column indicates that the disk uses GPT.
+
+> [!NOTE]
+> GPT status does not prove that the firmware is currently configured for UEFI boot.
 
 Select the suspected Windows disk:
 
@@ -132,52 +140,28 @@ Display the disk details:
 detail disk
 ```
 
-Confirm that the selected disk is the intended internal Windows disk.
-
-> [!WARNING]
-> Do not identify the disk by number alone. USB installers, external disks, recovery media, and old Windows disks may also appear in DiskPart.
-
----
-
-## 3. Locate the Windows and EFI Partitions
-
-With the correct disk selected, list its partitions:
+List its partitions and detected volumes:
 
 ```cmd
 list partition
-```
-
-List the detected volumes:
-
-```cmd
 list volume
 ```
 
-### Windows volume
+Confirm that the selected disk is the intended internal Windows disk.
+
+> [!WARNING]
+> Do not identify the disk by number alone.  
+> USB installers, external disks, recovery media, and old Windows disks may also appear in DiskPart.
+
+---
+
+## 3. Identify the Windows Volume
 
 The Windows volume is normally:
 
 - Formatted as NTFS
 - One of the largest volumes
 - Large enough to contain Windows, applications, and user profiles
-
-### EFI System Partition
-
-The EFI System Partition is normally:
-
-- Formatted as FAT32
-- Approximately 100 MB to 500 MB
-- Located on a GPT disk
-- Configured as a system partition
-- Not assigned a permanent drive letter
-
-Do not identify a partition by size alone. Verify its file system, type, disk number, and relationship to the intended Windows installation.
-
-If the computer contains several physical disks, there may be more than one EFI System Partition. Use the EFI partition associated with the Windows installation being repaired.
-
----
-
-## 4. Assign `W:` to the Windows Volume
 
 Select the suspected Windows volume:
 
@@ -202,7 +186,8 @@ Verify that the volume:
 - Uses NTFS
 - Is located on the intended physical disk
 - Is large enough to contain Windows
-- Is not installation media or a recovery partition
+- Is not installation media
+- Is not a recovery partition
 
 Assign the temporary drive letter:
 
@@ -220,11 +205,11 @@ exit
 
 Do not remove the existing drive letter until you know which volume is using it.
 
-Choose another unused letter and replace `W:` with that letter in every subsequent Windows-volume command.
+Choose another unused letter and replace `W:` with that letter in all subsequent Windows-volume commands.
 
 ---
 
-## 5. Verify the Windows Installation
+## 4. Verify the Windows Installation
 
 Run:
 
@@ -240,7 +225,7 @@ Continue only if these directories confirm that `W:` contains the intended Windo
 Do not continue if the volume contains:
 
 - Windows installation media
-- Recovery files
+- Recovery files only
 - An empty file system
 - A different Windows installation
 
@@ -248,9 +233,21 @@ If the expected directories are missing, return to DiskPart and locate the corre
 
 ---
 
-## 6. Assign `S:` to the EFI System Partition
+## 5. Identify the EFI System Partition
 
-Start DiskPart again:
+The EFI System Partition is normally:
+
+- Formatted as FAT32
+- Approximately 100 MB to 500 MB
+- Located on a GPT disk
+- Configured as a system partition
+- Not assigned a permanent drive letter
+
+Do not identify the EFI partition by size alone.
+
+If the computer contains multiple physical disks, it may also contain multiple EFI System Partitions. Select the EFI partition associated with the Windows installation being repaired.
+
+Start DiskPart:
 
 ```cmd
 diskpart
@@ -275,7 +272,7 @@ list partition
 list volume
 ```
 
-Select the suspected EFI System Partition volume:
+Select the suspected EFI volume:
 
 ```cmd
 select volume <EFIVolumeNumber>
@@ -296,8 +293,8 @@ detail volume
 Verify that the volume:
 
 - Uses FAT32
+- Is located on the intended Windows disk
 - Is the small EFI System Partition
-- Is on the intended Windows disk
 - Is not installation media
 - Is not an OEM recovery partition
 - Does not belong to another operating-system disk
@@ -315,11 +312,12 @@ exit
 ```
 
 > [!WARNING]
-> Do not format the EFI System Partition. Formatting it removes existing boot files and may affect Windows or other installed operating systems.
+> Do not format the EFI System Partition.  
+> Formatting it removes existing boot files and may affect Windows or other installed operating systems.
 
 ---
 
-## 7. Validate the Selected Volumes
+## 6. Validate the Selected Volumes
 
 Before running BCDBoot, confirm that:
 
@@ -328,7 +326,7 @@ Before running BCDBoot, confirm that:
 - `W:\Users` exists.
 - `W:\Program Files` exists.
 - `S:` is the correct FAT32 EFI System Partition.
-- The Windows and EFI volumes belong to the intended Windows installation.
+- Both volumes are associated with the intended Windows installation.
 - The physical disk uses GPT.
 - The computer is configured for UEFI boot.
 - The Windows volume is unlocked if BitLocker is enabled.
@@ -342,11 +340,13 @@ dir S:\EFI
 
 The partition may already contain boot files from Windows, the computer manufacturer, or another operating system.
 
-Do not delete existing EFI files during this procedure.
+Do not delete existing EFI files.
+
+If either volume is uncertain, stop and verify it again before continuing.
 
 ---
 
-## 8. Rebuild the UEFI Boot Files
+## 7. Rebuild the UEFI Boot Files
 
 Run:
 
@@ -372,37 +372,27 @@ Verify that the Windows boot directory exists:
 dir S:\EFI\Microsoft\Boot
 ```
 
-The presence of this directory confirms that the Windows boot files exist on the selected EFI partition. It does not confirm that the firmware is configured to start from that partition.
+The presence of this directory confirms that Windows boot files exist on the selected EFI partition.
+
+It does not confirm that the firmware is configured to start from that partition.
 
 ### If BCDBoot fails
 
-Check that:
+Verify that:
 
 - `W:\Windows` is the correct Windows directory.
 - `S:` is the correct EFI System Partition.
-- Both volumes belong to the intended Windows installation.
+- Both volumes are associated with the intended Windows installation.
 - BitLocker is unlocked.
 - The EFI partition is writable.
 - The EFI partition has available space.
 - The command was entered correctly.
 
-### If Windows Boot Manager is missing
-
-When `/s S:` is specified, BCDBoot writes the files to the selected EFI partition. On some systems, a new firmware entry may not be created automatically.
-
-If BCDBoot succeeds but Windows Boot Manager is missing:
-
-1. Restart the computer.
-2. Open the one-time boot menu or UEFI settings.
-3. Check for **Windows Boot Manager**.
-4. Confirm that UEFI mode is enabled.
-5. Review the boot order.
-
-Do not manually create firmware boot entries unless an approved advanced recovery procedure requires it.
+Do not format the EFI partition as a routine response to a BCDBoot failure.
 
 ---
 
-## 9. Restart and Test Windows
+## 8. Restart and Test Windows
 
 Close Command Prompt:
 
@@ -410,28 +400,45 @@ Close Command Prompt:
 exit
 ```
 
-Restart the computer. Remove installation media when appropriate so the computer starts from the repaired internal disk.
+Restart the computer.
+
+Remove the Windows installation media when appropriate so the computer starts from the repaired internal disk.
 
 Review the result:
 
-- If Windows starts normally, stop here.
-- If Windows still fails, record the exact error and continue.
-- If no boot device is found, check UEFI mode, the boot order, Windows Boot Manager, the selected EFI partition, and physical disk detection.
-- If BitLocker prompts for recovery, follow the approved recovery process.
+- If Windows starts normally, stop the procedure.
+- If Windows still fails, record the exact error.
+- If no boot device is found, check UEFI mode, disk detection, Windows Boot Manager, and the boot order.
+- If BitLocker requests recovery, follow the approved recovery process.
+
+### If Windows Boot Manager Is Missing
+
+If BCDBoot succeeds but Windows Boot Manager does not appear:
+
+1. Restart the computer.
+2. Open the one-time boot menu or UEFI settings.
+3. Confirm that the internal disk is detected.
+4. Confirm that UEFI boot mode is enabled.
+5. Check for **Windows Boot Manager**.
+6. Review the boot order.
+
+Do not manually create firmware boot entries unless an approved advanced recovery procedure requires it.
 
 ---
 
-## 10. Check the Windows File System
+## 9. Check the Windows File System
 
-Return to WinRE Command Prompt.
+Only continue if rebuilding the boot files did not resolve the issue.
 
-Drive letters may change after a restart, so verify the Windows volume again:
+Return to the Windows Recovery Environment and open Command Prompt.
+
+Drive letters may change after a restart. Verify the Windows volume again:
 
 ```cmd
 dir W:\Windows
 ```
 
-If `W:` is no longer correct, repeat the identification and drive-letter assignment steps.
+If `W:` is no longer correct, repeat the disk and volume identification steps.
 
 Run:
 
@@ -443,15 +450,17 @@ This checks the volume and repairs logical file-system errors.
 
 Do not interrupt CHKDSK unnecessarily.
 
-### Deeper storage scan
+Restart and test Windows after CHKDSK completes.
 
-Use the following command only when disk damage, unreadable sectors, I/O errors, or recurring corruption is suspected:
+### Deeper Storage Scan
+
+Use `/r` only when disk damage, unreadable sectors, I/O errors, or recurring corruption is suspected:
 
 ```cmd
 chkdsk W: /r
 ```
 
-The `/r` option includes `/f` and also checks for unreadable sectors. It may take a long time, especially on large mechanical disks.
+The `/r` option includes `/f` and also checks for unreadable sectors. It may take a long time, particularly on large mechanical disks.
 
 Escalate for storage diagnostics if CHKDSK reports:
 
@@ -463,19 +472,17 @@ Escalate for storage diagnostics if CHKDSK reports:
 - A volume that repeatedly becomes unavailable
 - Repairs that return after another restart
 
-Restart and test Windows after CHKDSK completes.
-
 ---
 
-## 11. Repair the Offline Windows Image
+## 10. Repair the Offline Windows Image
 
-If Windows still does not start, return to WinRE and verify the Windows volume:
+If Windows still does not start, return to Command Prompt and verify the Windows volume:
 
 ```cmd
 dir W:\Windows
 ```
 
-Repair the offline component store:
+Repair the offline Windows component store:
 
 ```cmd
 dism /image:W:\ /cleanup-image /restorehealth
@@ -487,13 +494,15 @@ If DISM succeeds, run offline System File Checker:
 sfc /scannow /offbootdir=W:\ /offwindir=W:\Windows
 ```
 
-DISM is run first because SFC may need the repaired component store when replacing damaged system files.
+DISM is run first because SFC may require the repaired component store when replacing damaged system files.
 
-### If DISM cannot find the source files
+Restart and test Windows after DISM and SFC complete.
+
+### If DISM Cannot Find the Source Files
 
 Use matching Windows installation media or another approved repair source.
 
-The source should match the installed system as closely as possible:
+The repair source should match the installed system as closely as possible:
 
 - Architecture
 - Language
@@ -503,13 +512,11 @@ The source should match the installed system as closely as possible:
 
 Do not guess the image index when using `install.wim` or `install.esd`. Identify the correct image before using it as a repair source.
 
-Restart and test Windows after DISM and SFC complete.
-
 ---
 
-## 12. BOOTREC on UEFI Systems
+## 11. BOOTREC on UEFI Systems
 
-BOOTREC is not part of the normal repair sequence for this procedure.
+BOOTREC is not part of the normal repair sequence in this procedure.
 
 Do not automatically run:
 
@@ -520,10 +527,10 @@ bootrec /scanos
 bootrec /rebuildbcd
 ```
 
-On a UEFI/GPT installation:
+On a UEFI and GPT installation:
 
 - `/fixmbr` repairs MBR boot code, which is not normally used for native UEFI startup.
-- `/fixboot` often returns `Access is denied` on current UEFI installations.
+- `/fixboot` may return `Access is denied` on current UEFI installations.
 - `/rebuildbcd` is normally unnecessary after BCDBoot succeeds.
 - BOOTREC cannot correct an incorrectly selected EFI partition.
 - BOOTREC does not resolve every missing firmware boot entry.
@@ -537,9 +544,9 @@ Use BOOTREC only as part of an approved advanced troubleshooting procedure.
 
 ---
 
-## 13. Check the UEFI Firmware Configuration
+## 12. Check the UEFI Firmware Configuration
 
-Use this section if:
+Check the firmware configuration if:
 
 - BCDBoot succeeds but Windows still does not start.
 - Windows Boot Manager does not appear.
@@ -549,26 +556,28 @@ Use this section if:
 
 Restart the computer and open its UEFI settings or one-time boot menu.
 
-Check that:
+Confirm that:
 
 - UEFI boot mode is enabled.
 - Legacy BIOS or Compatibility Support Module mode is not being used unexpectedly.
 - The internal Windows disk is detected.
 - Windows Boot Manager appears as a boot option.
 - Windows Boot Manager is positioned appropriately in the boot order.
-- The computer is not attempting to start from a disconnected or old disk.
+- The system is not attempting to start from a disconnected or old disk.
 - The storage-controller configuration has not changed unexpectedly.
 
 > [!WARNING]
 > Do not change RAID, AHCI, Intel VMD, TPM, or Secure Boot settings without understanding the existing configuration and the effect of the change.
-
-An incorrect storage-controller change may prevent Windows from starting and may trigger BitLocker recovery.
+>
+> An incorrect storage-controller change may prevent Windows from starting and may trigger BitLocker recovery.
 
 ---
 
-## 14. Remove the Temporary EFI Drive Letter
+## 13. Remove the Temporary EFI Drive Letter
 
-Drive letters assigned in WinRE are normally temporary. The temporary `S:` assignment can still be removed before leaving the recovery session.
+Drive letters assigned in the Windows Recovery Environment are normally temporary.
+
+The temporary `S:` assignment can also be removed before leaving the recovery session.
 
 Start DiskPart:
 
@@ -606,16 +615,28 @@ Exit DiskPart:
 exit
 ```
 
+Removing `W:` is normally unnecessary because drive letters assigned in the recovery environment do not generally become the installed operating system's normal drive letters.
+
 > [!WARNING]
 > Do not remove a drive letter unless you have positively identified the selected volume.
 
-Removing `W:` is normally unnecessary because drive letters assigned in WinRE do not generally become the installed operating system's normal drive letters.
+---
+
+## If Windows Still Does Not Start
+
+> [!IMPORTANT]
+> Do not consider the recovery complete just because the boot files were rebuilt or the Windows volume was checked.
+> If the computer still does not start normally after this procedure, stop treating this as a simple boot fix.
+>
+> Continue with the advanced UEFI diagnosis and firmware investigation in [winre-uefi-advanced-troubleshooting.md](winre-uefi-advanced-troubleshooting.md) before returning the device to service.
+>
+> This is the point where missing firmware settings, wrong boot order, storage-controller issues, and other deeper Windows startup problems are usually found.
 
 ---
 
-## 15. Record the Recovery Results
+## 14. Record the Recovery Results
 
-Record the recovery work and all relevant command results.
+Record the recovery work and all relevant command results in the support ticket or approved support record.
 
 ```text
 Computer name:
@@ -652,15 +673,15 @@ Follow-up required:
 Escalation reference:
 ```
 
-Record exact errors rather than only stating that a command failed.
+Record exact messages and error codes rather than stating only that a command failed.
 
-Save relevant photographs, screenshots, command output, diagnostic reports, and recovery details in the support ticket or approved support record.
+Save relevant photographs, screenshots, command output, diagnostic reports, and recovery details in the approved support record.
 
 ---
 
-## 16. If Windows Still Does Not Start
+## 15. If Windows Still Does Not Start
 
-If BCDBoot, CHKDSK, DISM, and SFC complete but Windows still does not start, record:
+If the documented repairs complete but Windows still does not start, record:
 
 - The exact startup error
 - The BCDBoot result
@@ -685,19 +706,25 @@ The remaining issue may involve:
 - An incorrect storage-controller mode
 - RAID, Intel VMD, or storage-driver issues
 - An unserviceable Windows installation
-- Memory, motherboard, or another hardware failure
+- Memory, motherboard, or other hardware failure
 
 Use symptom-specific troubleshooting or escalate according to the organization's recovery process.
 
-Do not proceed directly to reinstalling Windows until user data, BitLocker status, available recovery options, and organizational requirements have been reviewed.
+Do not proceed directly to reinstalling Windows until the following have been reviewed:
+
+- User data
+- BitLocker status
+- Available recovery options
+- Backup status
+- Organizational requirements
 
 ---
 
 ## Keyboard Symbol Reference
 
-The following mappings may help when a Portuguese ISO keyboard is interpreted using the English (US) layout in WinRE.
+The following mappings may help when a Portuguese ISO keyboard is interpreted using the English US layout in the Windows Recovery Environment.
 
-Keyboard models and layouts may differ. Test uncertain symbols on an empty command line before entering the full command.
+Keyboard models and layouts may differ. Test uncertain symbols on an empty command line before entering the complete command.
 
 Common mappings:
 
@@ -712,34 +739,59 @@ Treat these mappings as guidance rather than guarantees.
 
 ---
 
-## Recovery Order at a Glance
+## Quick Command Reference
 
-### 1. Identify and validate the disk and volumes
+### Identify the disk and volumes
 
-Confirm that:
+```cmd
+diskpart
+list disk
+select disk <DiskNumber>
+detail disk
+list partition
+list volume
+```
 
-- The correct physical disk is selected.
-- `W:` is assigned to the intended Windows volume.
-- `S:` is assigned to the correct FAT32 EFI System Partition.
-- Both volumes belong to the intended Windows installation.
-- The physical disk uses GPT.
-- The computer is configured for UEFI boot.
+### Assign `W:` to Windows
 
-### 2. Rebuild the UEFI boot files
+```cmd
+select volume <WindowsVolumeNumber>
+detail volume
+assign letter=W
+exit
+```
+
+### Verify Windows
+
+```cmd
+dir W:\Windows
+dir W:\Users
+dir "W:\Program Files"
+```
+
+### Assign `S:` to the EFI partition
+
+```cmd
+diskpart
+select disk <DiskNumber>
+list volume
+select volume <EFIVolumeNumber>
+detail volume
+assign letter=S
+exit
+```
+
+### Rebuild the UEFI boot files
 
 ```cmd
 bcdboot W:\Windows /s S: /f UEFI
 ```
 
-Restart and test Windows.
-
-### 3. Repair file-system errors
+### Check the file system
 
 ```cmd
 chkdsk W: /f
 ```
-
-Restart and test Windows.
 
 Use the following only when storage damage is suspected:
 
@@ -747,37 +799,30 @@ Use the following only when storage damage is suspected:
 chkdsk W: /r
 ```
 
-### 4. Repair the Windows image and system files
+### Repair the offline Windows installation
 
 ```cmd
 dism /image:W:\ /cleanup-image /restorehealth
 sfc /scannow /offbootdir=W:\ /offwindir=W:\Windows
 ```
 
-Restart and test Windows.
-
-### 5. Escalate based on the exact symptoms
-
-Do not automatically run the generic BOOTREC sequence on a UEFI/GPT computer.
-
 ---
 
-## UEFI Boot Recovery Checklist
+## Recovery Checklist
 
-### Initial assessment
+### Initial Assessment
 
 - [ ] Exact startup error recorded
 - [ ] Recent changes recorded
 - [ ] Unnecessary external storage disconnected
 - [ ] BitLocker status checked
-- [ ] Approved BitLocker recovery key available, if required
+- [ ] Recovery key available, if required
 - [ ] UEFI boot mode confirmed
 - [ ] Internal disk detected by the firmware
 
-### Disk and volume identification
+### Disk and Volume Identification
 
 - [ ] Correct physical disk identified
-- [ ] Physical disk number recorded
 - [ ] GPT status confirmed
 - [ ] Windows volume identified
 - [ ] `W:` assigned to the Windows volume
@@ -786,22 +831,22 @@ Do not automatically run the generic BOOTREC sequence on a UEFI/GPT computer.
 - [ ] `W:\Program Files` confirmed
 - [ ] EFI System Partition identified
 - [ ] FAT32 file system confirmed
-- [ ] EFI System Partition confirmed on the intended disk
-- [ ] `S:` assigned to the EFI System Partition
+- [ ] EFI partition confirmed on the intended disk
+- [ ] `S:` assigned to the EFI partition
 
-### UEFI boot repair
+### UEFI Boot Repair
 
-- [ ] Pre-repair validation completed
+- [ ] Final volume validation completed
 - [ ] BCDBoot command completed
 - [ ] BCDBoot result recorded
 - [ ] `S:\EFI\Microsoft\Boot` checked
 - [ ] Computer restarted
 - [ ] Windows startup tested
-- [ ] Windows Boot Manager checked in the firmware, if required
+- [ ] Windows Boot Manager checked, if required
 
-### Additional repairs
+### Additional Repair
 
-- [ ] Drive-letter assignments rechecked after restart
+- [ ] Drive letters rechecked after restart
 - [ ] CHKDSK `/f` completed, if required
 - [ ] CHKDSK `/r` used only when storage damage was suspected
 - [ ] Storage warnings documented
@@ -816,9 +861,8 @@ Do not automatically run the generic BOOTREC sequence on a UEFI/GPT computer.
 - [ ] Required applications and services tested
 - [ ] BitLocker status checked after recovery
 - [ ] Temporary EFI drive letter removed
-- [ ] All command results documented
+- [ ] Command results documented
 - [ ] Firmware changes documented
-- [ ] Recovery record completed
 - [ ] Follow-up actions recorded
 - [ ] Issue escalated if Windows still does not start
 
@@ -840,4 +884,4 @@ Depending on the cause of the startup failure, this procedure may provide:
 
 A successful BCDBoot result does not guarantee that the firmware is configured to start from the correct EFI System Partition.
 
-If Windows still does not start after the documented repairs, use the exact error messages and recorded command results to continue with symptom-specific troubleshooting.
+If Windows still does not start, use the exact errors and recorded command results for symptom-specific troubleshooting or escalation.
