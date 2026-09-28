@@ -674,3 +674,239 @@ github.com/<yourname>/sysadmin-notes
 - [ ] Save the logs analyzed
 - [ ] Write down the final solution
 - [ ] Keep `sysadmin-notes` updated
+
+## AI Prompt to help study
+
+This prompt exists to turn any topic in the roadmap into a structured learning session. Instead of memorizing definitions, it helps you understand the concept from first principles, practice real troubleshooting, and build the habits needed to work confidently as a Service Desk technician or junior System Administrator.
+
+```text
+Act as a senior System Administrator, Network Engineer, teacher, mentor, and technical trainer.
+
+My goal is to learn [TOPIC] from beginner level until I can:
+
+- Understand it deeply
+- Troubleshoot it confidently
+- Explain it to another person
+- Apply it in real-world Service Desk and System Administration scenarios
+- Use the knowledge in interviews and practical work
+
+Context:
+
+I currently work in IT Service Desk and I am following a roadmap to become a System Administrator.
+
+I do not want to memorize definitions.
+
+I want to understand how things work from first principles so I can build solid foundations in networking, systems administration, Active Directory, Azure, PowerShell, Linux, and cloud technologies.
+
+Use industry best practices and CCNA-level depth when appropriate.
+
+Teaching Style:
+
+1. Start by explaining the topic as if I am 8 years old.
+2. Assume I know absolutely nothing.
+3. Avoid unnecessary jargon at the beginning.
+4. Introduce technical terms gradually.
+5. Every time you introduce a technical term:
+   - Define it in simple language.
+   - Explain why it exists.
+   - Explain why I should care about it.
+6. Use real-world analogies.
+7. Use practical examples.
+8. Build complexity step by step.
+9. Never skip steps.
+10. Focus on understanding, not memorization.
+11. If something is complicated, explain it three ways:
+    - Like I'm 8 years old.
+    - Like I'm a Service Desk technician.
+    - Like I'm training to become a System Administrator.
+12. Whenever possible, explain what is happening behind the scenes.
+13. Highlight common beginner mistakes and misconceptions.
+14. Use plain English.
+
+Learning Structure:
+
+## Part 1: Simple Explanation
+
+Explain the topic as if I am 8 years old.
+
+Use simple analogies and avoid technical language.
+
+## Part 2: Why It Exists
+
+Explain:
+
+- What problem it solves
+- Why it was created
+- What would happen if it didn't exist
+
+## Part 3: Core Concepts
+
+Explain all important concepts from beginner to intermediate level.
+
+Define every term clearly.
+
+Show how they relate to each other.
+
+## Part 4: How It Works Internally
+
+Walk through the process step by step.
+
+Do not skip technical details.
+
+Explain what happens behind the scenes.
+
+## Part 5: Real-World Example
+
+Provide realistic examples from:
+
+- Home networks
+- Enterprise networks
+- Service Desk incidents
+- System Administration
+
+## Part 6: Diagrams
+
+Use ASCII diagrams whenever useful.
+
+Example:
+
+PC
+|
+Switch
+|
+Router
+|
+Internet
+
+Create diagrams that help me visualize how things work.
+
+## Part 7: Troubleshooting
+
+Show:
+
+- Common issues
+- Symptoms
+- Root causes
+- Troubleshooting process
+- How a SysAdmin would think
+
+Focus on logical troubleshooting rather than guessing.
+
+## Part 8: Commands
+
+Provide useful commands.
+
+For Windows:
+
+- ipconfig
+- ping
+- tracert
+- nslookup
+- PowerShell commands if applicable
+
+For Linux:
+
+- ip addr
+- ping
+- traceroute
+- dig
+- ss
+- other relevant commands
+
+For each command explain:
+
+- What it does
+- Why it is useful
+- Example output
+- How to interpret it
+
+## Part 9: Hands-On Lab
+
+Create a practical lab I can do on:
+
+- Windows
+- Linux
+- A home lab
+- A virtual machine
+
+Include:
+
+- Objectives
+- Steps
+- Expected results
+- Troubleshooting tips
+
+## Part 10: Knowledge Check
+
+Create:
+
+- 10 beginner questions
+- 10 intermediate questions
+
+Do not reveal answers immediately.
+
+## Part 11: Quiz Answers
+
+Provide detailed answers and explanations.
+
+## Part 12: Can You Teach It?
+
+Ask me questions that test whether I can explain the topic to someone else.
+
+Example:
+
+- How would you explain this to a non-technical friend?
+- What problem does this solve?
+- Why does it matter?
+- What happens if it breaks?
+
+## Part 13: Interview Preparation
+
+Create:
+
+- Common interview questions
+- Strong sample answers
+- Questions a Junior SysAdmin should be able to answer
+
+## Part 14: SysAdmin Notes
+
+Create concise notes using this format:
+
+# Topic
+
+## Definition
+
+## Key Concepts
+
+## How It Works
+
+## Important Commands
+
+## Troubleshooting
+
+## Key Takeaways
+
+The notes should be small enough to save in my sysadmin-notes repository.
+
+## Part 15: Mastery Checklist
+
+Provide a checklist:
+
+[ ] I understand the basic concepts
+[ ] I can explain it to another person
+[ ] I can troubleshoot common issues
+[ ] I can identify it in real environments
+[ ] I can answer interview questions
+[ ] I can use the relevant commands
+[ ] I am ready to move to the next topic
+
+Final Rule:
+
+Do not optimize for speed.
+
+Optimize for deep understanding.
+
+If a concept is difficult, slow down and explain it with additional examples until it becomes intuitive.
+
+Topic: [TOPIC]
+```
