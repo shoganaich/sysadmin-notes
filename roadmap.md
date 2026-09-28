@@ -700,6 +700,65 @@ I want to understand how things work from first principles so I can build solid 
 
 Use industry best practices and CCNA-level depth when appropriate.
 
+## Scope & Learning Boundary
+
+This lesson is part of a larger System Administration learning roadmap.
+
+Focus ONLY on the requested topic.
+
+Do not expand into future topics from the roadmap unless they are absolutely required to understand the current topic.
+
+When a related topic is necessary:
+
+- Mention it briefly.
+- Explain it in one or two sentences only.
+- Explain why it matters.
+- State that it will be covered in a future lesson.
+- Do not deep dive into it.
+
+The goal is mastery of ONE topic at a time.
+
+Depth is preferred over breadth.
+
+Finish the current topic completely before introducing future roadmap topics.
+
+Examples:
+
+If the topic is IPv4:
+
+✅ Explain IPv4 addresses
+✅ Explain address structure
+✅ Explain public vs private addresses
+✅ Explain how devices identify each other
+✅ Explain how communication works at a high level
+
+❌ Do not teach subnetting in detail
+❌ Do not teach DNS in detail
+❌ Do not teach DHCP in detail
+❌ Do not teach routing in detail
+❌ Do not teach NAT in detail
+❌ Do not teach IPv6 in detail
+
+If the topic is DNS:
+
+✅ Explain DNS records
+✅ Explain hostname resolution
+✅ Explain how DNS queries work
+
+❌ Do not teach Active Directory in detail
+❌ Do not teach routing in detail
+❌ Do not teach DHCP in detail
+
+If the topic is DHCP:
+
+✅ Explain scopes
+✅ Explain leases
+✅ Explain reservations
+
+❌ Do not deep dive into DNS
+❌ Do not deep dive into subnetting
+❌ Do not deep dive into routing
+
 Teaching Style:
 
 1. Start by explaining the topic as if I am 8 years old.
@@ -716,12 +775,13 @@ Teaching Style:
 9. Never skip steps.
 10. Focus on understanding, not memorization.
 11. If something is complicated, explain it three ways:
-    - Like I'm 8 years old.
-    - Like I'm a Service Desk technician.
-    - Like I'm training to become a System Administrator.
+    - Like I'm 8 years old
+    - Like I'm a Service Desk technician
+    - Like I'm training to become a System Administrator
 12. Whenever possible, explain what is happening behind the scenes.
 13. Highlight common beginner mistakes and misconceptions.
 14. Use plain English.
+15. If a concept is difficult, slow down and explain it with additional examples until it becomes intuitive.
 
 Learning Structure:
 
@@ -741,11 +801,13 @@ Explain:
 
 ## Part 3: Core Concepts
 
-Explain all important concepts from beginner to intermediate level.
+Explain only the concepts that are fundamental to the requested topic.
 
 Define every term clearly.
 
-Show how they relate to each other.
+Show relationships only when necessary for understanding the current topic.
+
+Do not include detailed explanations of concepts that belong to future topics.
 
 ## Part 4: How It Works Internally
 
@@ -755,7 +817,7 @@ Do not skip technical details.
 
 Explain what happens behind the scenes.
 
-## Part 5: Real-World Example
+## Part 5: Real-World Examples
 
 Provide realistic examples from:
 
@@ -794,7 +856,7 @@ Focus on logical troubleshooting rather than guessing.
 
 ## Part 8: Commands
 
-Provide useful commands.
+Provide useful commands relevant to the requested topic.
 
 For Windows:
 
@@ -811,7 +873,7 @@ For Linux:
 - traceroute
 - dig
 - ss
-- other relevant commands
+- Other relevant commands
 
 For each command explain:
 
@@ -820,9 +882,11 @@ For each command explain:
 - Example output
 - How to interpret it
 
+Only include commands directly relevant to the topic.
+
 ## Part 9: Hands-On Lab
 
-Create a practical lab I can do on:
+Create a practical lab I can perform on:
 
 - Windows
 - Linux
@@ -843,7 +907,7 @@ Create:
 - 10 beginner questions
 - 10 intermediate questions
 
-Do not reveal answers immediately.
+Do not reveal the answers immediately.
 
 ## Part 11: Quiz Answers
 
@@ -851,9 +915,9 @@ Provide detailed answers and explanations.
 
 ## Part 12: Can You Teach It?
 
-Ask me questions that test whether I can explain the topic to someone else.
+Ask questions that test whether I can explain the topic to someone else.
 
-Example:
+Examples:
 
 - How would you explain this to a non-technical friend?
 - What problem does this solve?
@@ -886,19 +950,36 @@ Create concise notes using this format:
 
 ## Key Takeaways
 
-The notes should be small enough to save in my sysadmin-notes repository.
+The notes should be concise enough to save in my sysadmin-notes repository.
 
 ## Part 15: Mastery Checklist
 
 Provide a checklist:
 
 [ ] I understand the basic concepts
+
 [ ] I can explain it to another person
+
 [ ] I can troubleshoot common issues
+
 [ ] I can identify it in real environments
+
 [ ] I can answer interview questions
+
 [ ] I can use the relevant commands
+
 [ ] I am ready to move to the next topic
+
+## Part 16: What Comes Next
+
+List only the next related topics that should be learned after mastering this one.
+
+For each topic:
+
+- Give a one-sentence description.
+- Explain why it should be learned next.
+
+Do not teach these topics.
 
 Final Rule:
 
@@ -906,7 +987,11 @@ Do not optimize for speed.
 
 Optimize for deep understanding.
 
-If a concept is difficult, slow down and explain it with additional examples until it becomes intuitive.
+Teach only the requested topic.
+
+Do not expand into future topics unless absolutely required for understanding.
+
+Mention related topics briefly and defer them to the "What Comes Next" section.
 
 Topic: [TOPIC]
 ```
