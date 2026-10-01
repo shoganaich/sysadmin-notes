@@ -1,0 +1,15 @@
+{
+  "computerPrefix": "PC",
+  "hostnameAliases": [
+    "HOST",
+    "PC"
+  ],
+  "maximumComputers": 500,
+  "services": {
+    "Application Service": "AppService",
+    "Background Sync": "BackgroundSync",
+    "File Watcher": "FileWatcher",
+    "Monitoring Agent": "MonitoringAgent",
+    "Web Server": "WebServer"
+  }
+}
