@@ -4,6 +4,9 @@ scripts/powershell/gps-locator/GPSLocator.html
 # Shift reports contain internal hostnames, tickets and names
 scripts/powershell/shift-log/reports/
 
+# Personal settings (name, shifts, categories), created on first run
+scripts/powershell/shift-log/shift-log-config.json
+
 # Reports or logs accidentally saved inside the repo
 *.log
 CleanupLog_*.txt

@@ -26,21 +26,42 @@
     - Weekly, monthly, or custom-range summaries
     - Archive old reports into monthly folders
 
+    Names, shifts, categories, and other defaults come from shift-log-config.json,
+    which is created next to the script on first run.
+
 .PARAMETER ReportDirectory
-    Folder where reports are stored. Defaults to a "reports" folder next to the script.
+    Folder where reports are stored. Overrides reportDirectory in the config file.
+
+.PARAMETER ConfigPath
+    Config file to use. Defaults to shift-log-config.json next to the script.
 
 .NOTES
     Compatible with Windows PowerShell 5.1.
 #>
 
 param(
-    [string]$ReportDirectory
+    [string]$ReportDirectory,
+    [string]$ConfigPath
 )
 
 $ErrorActionPreference = "Stop"
 
-$ShiftNames = @("T1", "T2", "T3")
-$EntryCategories = @("Incident", "Request", "Planned work", "Escalation", "Information")
+# Written as shift-log-config.json on first run. Keys missing from that file fall back to these.
+$DefaultConfigJson = @'
+{
+  "technician": "",
+  "defaultShift": "",
+  "shifts": ["T1", "T2", "T3"],
+  "entryCategories": ["Incident", "Request", "Planned work", "Escalation", "Information"],
+  "reportDirectory": "",
+  "resumeListSize": 10,
+  "suggestionCount": 9,
+  "archiveAfterDays": 60,
+  "ticketPrefixes": ["INC", "REQ", "RITM", "CHG", "TASK", "PRB", "SR"]
+}
+'@
+
+# Statuses stay fixed here because the carry-over, summary, and archive logic depend on them
 $EntryStatuses = @("Completed", "Pending", "Escalated", "Monitoring", "Information only")
 $PlannedStatuses = @("Scheduled", "Pending", "In progress", "Blocked", "Cancelled")
 
@@ -795,13 +816,17 @@ function Find-ReportItems {
 }
 
 function Get-AssetNames {
-    <# Upper-case names that contain a number, such as QC09, ENG018 or PC012. Ticket numbers are left out. #>
+    <# Upper-case names that contain a number, such as QC09, ENG018 or PC012. Ticket numbers (ticketPrefixes) are left out. #>
     param([string]$Text)
+
+    $Prefixes = @($Config.ticketPrefixes | ForEach-Object { [regex]::Escape($_) })
+    $TicketPattern = ""
+    if ($Prefixes.Count -gt 0) { $TicketPattern = '^(' + ($Prefixes -join '|') + ')\d' }
 
     $Names = New-Object System.Collections.Generic.HashSet[string]
     foreach ($Match in [regex]::Matches([string]$Text, '\b[A-Z][A-Z0-9-]*[0-9][A-Z0-9-]*\b')) {
         $Name = $Match.Value.TrimEnd('-')
-        if ($Name.Length -ge 3 -and $Name -notmatch '^(INC|REQ|RITM|CHG|TASK|PRB|SR)\d') {
+        if ($Name.Length -ge 3 -and -not ($TicketPattern -and $Name -match $TicketPattern)) {
             $null = $Names.Add($Name)
         }
     }
@@ -1021,7 +1046,7 @@ function Invoke-Archive {
 
     $Days = 0
     while ($true) {
-        $Answer = Read-Text -Prompt "Archive reports older than how many days" -Current "60"
+        $Answer = Read-Text -Prompt "Archive reports older than how many days" -Current ([string]$Config.archiveAfterDays)
         if ([int]::TryParse($Answer, [ref]$Days) -and $Days -ge 1) { break }
         Write-Host "Enter a whole number of days, 1 or more." -ForegroundColor Yellow
     }
@@ -1106,7 +1131,7 @@ function Show-ValidationProblems {
 function Select-ExistingReport {
     param([Parameter(Mandatory = $true)][string]$Directory)
 
-    $PageSize = 10
+    $PageSize = $Config.resumeListSize
     $ShowAll = $false
 
     while ($true) {
@@ -1279,7 +1304,7 @@ function Show-Editor {
             }
             65 {
                 # A - add shift entry
-                $Entry = Read-NewEntry -Suggestions (Get-EntrySuggestions -Report $Report -History $History)
+                $Entry = Read-NewEntry -Suggestions (Get-EntrySuggestions -Report $Report -History $History -Limit $Config.suggestionCount)
                 if ($Entry) {
                     $Selected["Entries"] = Add-EntryInOrder -Report $Report -Entry $Entry
                     $Active = "Entries"
@@ -1424,12 +1449,15 @@ function Start-NewReport {
         try { $Previous = Import-Report -StatePath $Files[0].FullName } catch { $Previous = $null }
     }
 
+    # The config file wins, then the last report, then the Windows user name
     $DefaultTechnician = $env:USERNAME
     $DefaultShift = ""
     if ($Previous) {
         if ($Previous.Technician) { $DefaultTechnician = $Previous.Technician }
         $DefaultShift = $Previous.Shift
     }
+    if ($Config.technician) { $DefaultTechnician = $Config.technician }
+    if ($Config.defaultShift) { $DefaultShift = $Config.defaultShift }
 
     Write-Title "New Shift Report"
 
@@ -1471,11 +1499,138 @@ function Show-Saved {
 }
 
 # ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+
+function Import-Config {
+    <#
+        Reads the config file, creating it with the defaults when it does not exist.
+        Keys missing from the file fall back to the defaults, so older files keep working.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $Defaults = $DefaultConfigJson | ConvertFrom-Json
+    $Created = $false
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-TextFile -Path $Path -Text "$DefaultConfigJson`r`n"
+        $Created = $true
+    }
+
+    try {
+        $Saved = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        throw "The config file is not valid JSON: $Path`n$($_.Exception.Message)"
+    }
+    if ($null -eq $Saved) { $Saved = New-Object PSObject }
+
+    $Config = [ordered]@{}
+    foreach ($Property in $Defaults.PSObject.Properties) {
+        $Value = $Property.Value
+        if ($Saved.PSObject.Properties[$Property.Name] -and $null -ne $Saved.($Property.Name)) {
+            $Value = $Saved.($Property.Name)
+        }
+        $Config[$Property.Name] = $Value
+    }
+
+    $Problems = New-Object System.Collections.Generic.List[string]
+
+    foreach ($Name in @("technician", "defaultShift", "reportDirectory")) {
+        if ($Config[$Name] -isnot [string]) {
+            $Problems.Add("'$Name' must be text in quotes, for example `"`".")
+        }
+    }
+
+    foreach ($Name in @("shifts", "entryCategories", "ticketPrefixes")) {
+        $Names = New-Object System.Collections.Generic.List[string]
+        $Valid = $true
+        foreach ($Item in @($Config[$Name])) {
+            if ($Item -isnot [string]) { $Valid = $false; break }
+            if ($Item.Trim()) { $Names.Add($Item.Trim()) }
+        }
+
+        if (-not $Valid) {
+            $Problems.Add("'$Name' must be a list of names in quotes, for example [`"T1`", `"T2`"].")
+        }
+        elseif ($Names.Count -eq 0 -and $Name -ne "ticketPrefixes") {
+            $Problems.Add("'$Name' needs at least one name.")
+        }
+        $Config[$Name] = $Names.ToArray()
+    }
+
+    foreach ($Name in @("resumeListSize", "suggestionCount", "archiveAfterDays")) {
+        $Minimum = 1
+        if ($Name -eq "suggestionCount") { $Minimum = 0 }
+
+        $Number = 0
+        if ([int]::TryParse([string]$Config[$Name], [ref]$Number) -and $Number -ge $Minimum) {
+            $Config[$Name] = $Number
+        }
+        else {
+            $Problems.Add("'$Name' must be a whole number, $Minimum or more.")
+        }
+    }
+
+    if ($Problems.Count -gt 0) {
+        throw ("Problems in the config file $Path`n- " + ($Problems -join "`n- "))
+    }
+
+    $Config["Path"] = $Path
+    $Config["Created"] = $Created
+    return [PSCustomObject]$Config
+}
+
+function Resolve-ReportDirectory {
+    <#
+        The -ReportDirectory parameter wins, then reportDirectory in the config file,
+        then a "reports" folder next to the script. A relative path in the config file
+        is relative to the script folder, and %VARIABLES% are expanded.
+    #>
+    param(
+        [string]$Parameter,
+        [string]$Configured,
+        [string]$ScriptFolder
+    )
+
+    if ($Parameter) {
+        $Path = $Parameter
+    }
+    elseif ($Configured) {
+        $Path = [Environment]::ExpandEnvironmentVariables($Configured)
+        if (-not [System.IO.Path]::IsPathRooted($Path) -and -not $Path.StartsWith("~")) {
+            $Path = Join-Path $ScriptFolder $Path
+        }
+    }
+    else {
+        $Path = Join-Path $ScriptFolder "reports"
+    }
+
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+}
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-if (-not $ReportDirectory) { $ReportDirectory = Join-Path $PSScriptRoot "reports" }
-$ReportDirectory = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ReportDirectory)
+if (-not $ConfigPath) { $ConfigPath = Join-Path $PSScriptRoot "shift-log-config.json" }
+$ConfigPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ConfigPath)
+
+try {
+    $Config = Import-Config -Path $ConfigPath
+}
+catch {
+    Write-Host ""
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Fix the file, or delete it to recreate it with the defaults." -ForegroundColor Yellow
+    exit 1
+}
+
+$ShiftNames = $Config.shifts
+$EntryCategories = $Config.entryCategories
+$ReportDirectory = Resolve-ReportDirectory -Parameter $ReportDirectory `
+    -Configured $Config.reportDirectory -ScriptFolder $PSScriptRoot
 
 if (-not (Test-Path -LiteralPath $ReportDirectory)) {
     New-Item -Path $ReportDirectory -ItemType Directory -Force | Out-Null
@@ -1489,6 +1644,13 @@ while ($true) {
     Write-Host "4. Summary"
     Write-Host "5. Archive old reports"
     Write-Host "6. Exit"
+    Write-Host ""
+    Write-Host "Config  : $($Config.Path)" -ForegroundColor DarkGray
+    Write-Host "Reports : $ReportDirectory" -ForegroundColor DarkGray
+    if ($Config.Created) {
+        Write-Host "The config file was just created with the defaults. Edit it to set your name, shifts, and categories." -ForegroundColor Yellow
+        $Config.Created = $false
+    }
     Write-Host ""
 
     $Choice = Read-Host "Select an option"
