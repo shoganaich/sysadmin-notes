@@ -21,6 +21,10 @@
     - Autosave after every change, written safely so a crash cannot corrupt a report
     - Validate, preview, and copy reports
     - Resume existing reports
+    - Reuse recent entry descriptions when adding an entry
+    - Search every report, including archived ones
+    - Weekly, monthly, or custom-range summaries
+    - Archive old reports into monthly folders
 
 .PARAMETER ReportDirectory
     Folder where reports are stored. Defaults to a "reports" folder next to the script.
@@ -176,12 +180,16 @@ function Read-Time {
     }
 }
 
-function Read-ReportDate {
-    $DefaultDate = Get-Date -Format "yyyy-MM-dd"
+function Read-Date {
+    <# Accepts YYYY-MM-DD. Enter keeps the default. #>
+    param(
+        [string]$Prompt = "Report date",
+        [string]$Default = (Get-Date -Format "yyyy-MM-dd")
+    )
 
     while ($true) {
-        $Answer = Read-Host "Report date [$DefaultDate]"
-        if (-not $Answer) { return $DefaultDate }
+        $Answer = Read-Host "$Prompt [$Default]"
+        if (-not $Answer) { return $Default }
 
         $ParsedDate = [DateTime]::MinValue
         $Valid = [DateTime]::TryParseExact(
@@ -268,14 +276,37 @@ function Edit-PlannedItem {
 }
 
 function Read-NewEntry {
+    <# Suggestions are recent entries; typing one's number reuses its description and category. #>
+    param([AllowEmptyCollection()][object[]]$Suggestions = @())
+
     Write-Title "Add Shift Entry"
+
+    if ($Suggestions.Count -gt 0) {
+        Write-Host "Recent entries - type a number to reuse one:" -ForegroundColor Cyan
+        for ($Index = 0; $Index -lt $Suggestions.Count; $Index++) {
+            $Text = $Suggestions[$Index].Description
+            if ($Text.Length -gt 70) { $Text = $Text.Substring(0, 67) + "..." }
+            Write-Host ("  {0}. [{1}] {2}" -f ($Index + 1), $Suggestions[$Index].Category, $Text)
+        }
+        Write-Host ""
+    }
+
     Write-Host "Leave the description empty to cancel." -ForegroundColor DarkGray
     Write-Host ""
 
     $Description = Read-Text -Prompt "Description"
     if (-not $Description) { return $null }
 
-    $Category = Read-Choice -Title "Category" -Options $EntryCategories -AllowOther
+    $DefaultCategory = ""
+    $Number = 0
+    if ([int]::TryParse($Description, [ref]$Number) -and $Number -ge 1 -and $Number -le $Suggestions.Count) {
+        $Picked = $Suggestions[$Number - 1]
+        Write-Host "Press Enter to keep it, or type a new description." -ForegroundColor DarkGray
+        $Description = Read-Text -Prompt "Description" -Current $Picked.Description -Required
+        $DefaultCategory = $Picked.Category
+    }
+
+    $Category = Read-Choice -Title "Category" -Options $EntryCategories -Current $DefaultCategory -AllowOther
     $Reference = Read-Text -Prompt "Ticket or reference number (optional)"
     $Status = Read-Choice -Title "Status" -Options $EntryStatuses
     Write-Host ""
@@ -582,10 +613,14 @@ function Import-Report {
 }
 
 function Get-ReportFiles {
-    param([Parameter(Mandatory = $true)][string]$Directory)
+    <# Newest first. Without -Recurse only the main folder is read, so archived reports are left out. #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Directory,
+        [switch]$Recurse
+    )
 
     return @(
-        Get-ChildItem -LiteralPath $Directory -Filter "*-shift-report.json" -File -ErrorAction SilentlyContinue |
+        Get-ChildItem -LiteralPath $Directory -Filter "*-shift-report.json" -File -Recurse:$Recurse -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending
     )
 }
@@ -611,6 +646,432 @@ function Get-OpenItems {
     }
 
     return ,$Items
+}
+
+function Copy-ToClipboard {
+    <# Returns $true when copied. On Linux, Set-Clipboard needs a clipboard tool such as xclip. #>
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    try {
+        Set-Clipboard -Value $Text
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+# History: suggestions, search, summaries, and archiving
+# ---------------------------------------------------------------------------
+
+function Import-AllReports {
+    <# Loads every report, archived ones included, oldest first. Unreadable files are skipped. #>
+    param([Parameter(Mandatory = $true)][string]$Directory)
+
+    $Reports = New-Object System.Collections.ArrayList
+    foreach ($File in @(Get-ReportFiles -Directory $Directory -Recurse)) {
+        try { $null = $Reports.Add((Import-Report -StatePath $File.FullName)) } catch { }
+    }
+
+    $Sorted = @($Reports | Sort-Object ReportDate, StartTime)
+    return ,$Sorted
+}
+
+function Get-EntryHistory {
+    <# Entries from the most recent other reports, newest first. #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Directory,
+        [string]$ExcludePath = "",
+        [int]$ReportCount = 30
+    )
+
+    $Entries = New-Object System.Collections.ArrayList
+    $Files = @(Get-ReportFiles -Directory $Directory -Recurse |
+        Where-Object { $_.FullName -ne $ExcludePath } |
+        Select-Object -First $ReportCount)
+
+    foreach ($File in $Files) {
+        try {
+            $Saved = Import-Report -StatePath $File.FullName
+            for ($Index = $Saved.Entries.Count - 1; $Index -ge 0; $Index--) {
+                $null = $Entries.Add($Saved.Entries[$Index])
+            }
+        }
+        catch { }
+    }
+
+    return ,$Entries
+}
+
+function Get-EntrySuggestions {
+    <# Most often used descriptions first, then the most recent. The current report counts first. #>
+    param(
+        [Parameter(Mandatory = $true)]$Report,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.ArrayList]$History,
+        [int]$Limit = 9
+    )
+
+    $Candidates = New-Object System.Collections.ArrayList
+    for ($Index = $Report.Entries.Count - 1; $Index -ge 0; $Index--) {
+        $null = $Candidates.Add($Report.Entries[$Index])
+    }
+    $Candidates.AddRange($History)
+
+    $Seen = @{}
+    $Ranked = New-Object System.Collections.ArrayList
+    for ($Index = 0; $Index -lt $Candidates.Count; $Index++) {
+        $Entry = $Candidates[$Index]
+        if (-not $Entry.Description) { continue }
+
+        $Key = $Entry.Description.Trim().ToLowerInvariant()
+        if ($Seen.ContainsKey($Key)) {
+            $Seen[$Key].Uses++
+        }
+        else {
+            $Stat = [PSCustomObject]@{ Entry = $Entry; Uses = 1; Order = $Index }
+            $Seen[$Key] = $Stat
+            $null = $Ranked.Add($Stat)
+        }
+    }
+
+    $Top = @($Ranked |
+        Sort-Object @{ Expression = "Uses"; Descending = $true }, @{ Expression = "Order" } |
+        Select-Object -First $Limit)
+
+    return ,@($Top | ForEach-Object { $_.Entry })
+}
+
+function ConvertTo-SearchText {
+    <# Lower case without accents, so a search typed without accents still finds accented words. #>
+    param([string]$Text)
+
+    if (-not $Text) { return "" }
+
+    $Builder = New-Object System.Text.StringBuilder
+    foreach ($Char in $Text.Normalize([System.Text.NormalizationForm]::FormD).ToCharArray()) {
+        if ([Globalization.CharUnicodeInfo]::GetUnicodeCategory($Char) -ne [Globalization.UnicodeCategory]::NonSpacingMark) {
+            $null = $Builder.Append($Char)
+        }
+    }
+    return $Builder.ToString().ToLowerInvariant()
+}
+
+function Find-ReportItems {
+    <# Entries and planned work containing the term in any field. Newest first. #>
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Reports,
+        [Parameter(Mandatory = $true)][string]$Term
+    )
+
+    $Needle = ConvertTo-SearchText $Term
+    $Results = New-Object System.Collections.ArrayList
+
+    foreach ($Report in $Reports) {
+        foreach ($Item in $Report.PlannedWork) {
+            $Haystack = ConvertTo-SearchText ("{0} {1} {2}" -f $Item.Description, $Item.Reference, $Item.Status)
+            if ($Haystack.Contains($Needle)) {
+                $null = $Results.Add([PSCustomObject]@{
+                    Report = $Report
+                    Line   = "[Planned] $(Format-PlannedLine -Item $Item)"
+                })
+            }
+        }
+
+        foreach ($Entry in $Report.Entries) {
+            $Haystack = ConvertTo-SearchText ("{0} {1} {2} {3}" -f $Entry.Description, $Entry.Reference, $Entry.Category, $Entry.Status)
+            if ($Haystack.Contains($Needle)) {
+                $null = $Results.Add([PSCustomObject]@{
+                    Report = $Report
+                    Line   = Format-EntryLine -Entry $Entry
+                })
+            }
+        }
+    }
+
+    # Reports are loaded oldest first
+    $Results.Reverse()
+    return ,$Results
+}
+
+function Get-AssetNames {
+    <# Upper-case names that contain a number, such as QC09, ENG018 or PC012. Ticket numbers are left out. #>
+    param([string]$Text)
+
+    $Names = New-Object System.Collections.Generic.HashSet[string]
+    foreach ($Match in [regex]::Matches([string]$Text, '\b[A-Z][A-Z0-9-]*[0-9][A-Z0-9-]*\b')) {
+        $Name = $Match.Value.TrimEnd('-')
+        if ($Name.Length -ge 3 -and $Name -notmatch '^(INC|REQ|RITM|CHG|TASK|PRB|SR)\d') {
+            $null = $Names.Add($Name)
+        }
+    }
+    return ,@($Names)
+}
+
+function Get-PeriodRange {
+    $Today = (Get-Date).Date
+    $WeekStart = $Today.AddDays(-((([int]$Today.DayOfWeek) + 6) % 7))
+    $MonthStart = $Today.AddDays(1 - $Today.Day)
+
+    $Choice = Read-Choice -Title "Period" -Options @("This week", "Last week", "This month", "Last month", "Custom range")
+
+    switch ($Choice) {
+        "This week"  { $From = $WeekStart; $To = $Today }
+        "Last week"  { $From = $WeekStart.AddDays(-7); $To = $WeekStart.AddDays(-1) }
+        "This month" { $From = $MonthStart; $To = $Today }
+        "Last month" { $From = $MonthStart.AddMonths(-1); $To = $MonthStart.AddDays(-1) }
+        default {
+            Write-Host ""
+            $Culture = [Globalization.CultureInfo]::InvariantCulture
+            $From = [DateTime]::ParseExact((Read-Date -Prompt "From" -Default $MonthStart.ToString("yyyy-MM-dd")), "yyyy-MM-dd", $Culture)
+            $To = [DateTime]::ParseExact((Read-Date -Prompt "To" -Default $Today.ToString("yyyy-MM-dd")), "yyyy-MM-dd", $Culture)
+            if ($To -lt $From) { $From, $To = $To, $From }
+        }
+    }
+
+    return [PSCustomObject]@{
+        Label = $Choice
+        From  = $From.ToString("yyyy-MM-dd")
+        To    = $To.ToString("yyyy-MM-dd")
+    }
+}
+
+function Get-SummaryText {
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Reports,
+        [Parameter(Mandatory = $true)]$Period
+    )
+
+    $InRange = @($Reports | Where-Object { $_.ReportDate -ge $Period.From -and $_.ReportDate -le $Period.To })
+
+    $Entries = New-Object System.Collections.ArrayList
+    foreach ($Report in $InRange) { $Entries.AddRange($Report.Entries) }
+
+    $Lines = New-Object System.Collections.Generic.List[string]
+    $Lines.AddRange([string[]]@(
+        "SHIFT SUMMARY",
+        "=============",
+        "",
+        "Period      : $($Period.Label) ($($Period.From) to $($Period.To))",
+        "Reports     : $($InRange.Count)"
+    ))
+
+    if ($InRange.Count -eq 0) {
+        $Lines.AddRange([string[]]@("", "No reports in this period."))
+        return $Lines.ToArray()
+    }
+
+    $Shifts = @($InRange | Group-Object Shift | Sort-Object Name | ForEach-Object { "$($_.Name) x$($_.Count)" })
+    $Technicians = @($InRange | ForEach-Object { $_.Technician } | Sort-Object -Unique)
+    $Lines.Add("Shifts      : $($Shifts -join ', ')")
+    $Lines.Add("Technicians : $($Technicians -join ', ')")
+
+    # Entries by status, and how many were resolved without carrying over
+    $Lines.AddRange([string[]]@("", "ENTRIES", "-------", ""))
+    $Lines.Add(("{0,-17} : {1}" -f "Total", $Entries.Count))
+    foreach ($Status in $EntryStatuses) {
+        $Count = @($Entries | Where-Object { $_.Status -eq $Status }).Count
+        $Lines.Add(("{0,-17} : {1}" -f $Status, $Count))
+    }
+
+    $Actionable = @($Entries | Where-Object { $_.Status -ne "Information only" }).Count
+    if ($Actionable -gt 0) {
+        $Completed = @($Entries | Where-Object { $_.Status -eq "Completed" }).Count
+        $Percent = [Math]::Round(100 * $Completed / $Actionable)
+        $Lines.Add("")
+        $Lines.Add(("{0,-17} : {1} of {2} ({3}%)" -f "Resolved on shift", $Completed, $Actionable, $Percent))
+    }
+
+    $Lines.AddRange([string[]]@("", "BY CATEGORY", "-----------", ""))
+    if ($Entries.Count -eq 0) {
+        $Lines.Add("No entries recorded.")
+    }
+    $Categories = @($Entries | Group-Object Category |
+        Sort-Object @{ Expression = "Count"; Descending = $true }, @{ Expression = "Name" })
+    foreach ($Group in $Categories) {
+        $Lines.Add(("{0,-17} : {1}" -f $Group.Name, $Group.Count))
+    }
+
+    # Hosts and assets named in two or more entries
+    $Mentions = @{}
+    foreach ($Entry in $Entries) {
+        foreach ($Name in (Get-AssetNames -Text $Entry.Description)) {
+            $Mentions[$Name] = 1 + [int]$Mentions[$Name]
+        }
+    }
+    $Top = @($Mentions.GetEnumerator() | Where-Object { $_.Value -ge 2 } |
+        Sort-Object @{ Expression = "Value"; Descending = $true }, @{ Expression = "Key" } |
+        Select-Object -First 10)
+
+    $Lines.AddRange([string[]]@("", "MOST MENTIONED HOSTS", "--------------------", ""))
+    if ($Top.Count -eq 0) {
+        $Lines.Add("No host came up in more than one entry.")
+    }
+    foreach ($Mention in $Top) {
+        $Lines.Add(("{0,-17} : {1} entries" -f $Mention.Key, $Mention.Value))
+    }
+
+    # Whatever the last report of the period would hand over
+    $Last = $InRange[$InRange.Count - 1]
+    $Open = Get-OpenItems -Report $Last
+
+    $Lines.AddRange([string[]]@("", "STILL OPEN AT END OF PERIOD", "---------------------------", ""))
+    $Lines.Add("From the $($Last.ReportDate) $($Last.Shift) report:")
+    if ($Open.Count -eq 0) {
+        $Lines.Add("Nothing open.")
+    }
+    for ($Index = 0; $Index -lt $Open.Count; $Index++) {
+        $Lines.Add("$($Index + 1). $(Format-PlannedLine -Item $Open[$Index])")
+    }
+
+    $Lines.AddRange([string[]]@("", "Generated   : $(Get-Date -Format 'yyyy-MM-dd HH:mm')"))
+    return $Lines.ToArray()
+}
+
+function Show-Search {
+    param([Parameter(Mandatory = $true)][string]$Directory)
+
+    $Reports = Import-AllReports -Directory $Directory
+
+    while ($true) {
+        Write-Title "Search Reports"
+        Write-Host "Searches every field of $($Reports.Count) reports, archived ones included." -ForegroundColor DarkGray
+        Write-Host "Case and accents are ignored. Leave empty to return." -ForegroundColor DarkGray
+        Write-Host ""
+
+        $Term = Read-Text -Prompt "Search for"
+        if (-not $Term) { return }
+
+        $Results = Find-ReportItems -Reports $Reports -Term $Term
+
+        Write-Host ""
+        if ($Results.Count -eq 0) {
+            Write-Host "No matches for '$Term'." -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "$($Results.Count) match(es) for '$Term', newest first:" -ForegroundColor Green
+            Write-Host ""
+            foreach ($Result in $Results) {
+                Write-Host ("{0} {1,-3} " -f $Result.Report.ReportDate, $Result.Report.Shift) -ForegroundColor DarkGray -NoNewline
+                Write-Host $Result.Line
+            }
+        }
+
+        Wait-ForKey -Message "Press any key to search again..."
+    }
+}
+
+function Show-Summary {
+    param([Parameter(Mandatory = $true)][string]$Directory)
+
+    Write-Title "Shift Summary"
+    $Period = Get-PeriodRange
+    $Lines = Get-SummaryText -Reports (Import-AllReports -Directory $Directory) -Period $Period
+    $Text = ($Lines -join "`r`n") + "`r`n"
+    $Message = ""
+    $MessageColor = "Green"
+
+    while ($true) {
+        Write-Title "Shift Summary"
+        foreach ($Line in $Lines) { Write-Host $Line }
+        Write-Host ""
+        Write-KeyHelp @("C", "Copy", "S", "Save to file", "Any other key", "Return")
+
+        if ($Message) {
+            Write-Host ""
+            Write-Host $Message -ForegroundColor $MessageColor
+        }
+        $Message = ""
+        $MessageColor = "Green"
+
+        $Key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
+        switch ($Key.VirtualKeyCode) {
+            67 {
+                if (Copy-ToClipboard -Text $Text) {
+                    $Message = "Summary copied to the clipboard."
+                }
+                else {
+                    $Message = "Could not reach the clipboard. Save it to a file instead."
+                    $MessageColor = "Yellow"
+                }
+            }
+            83 {
+                $Folder = Join-Path $Directory "summaries"
+                if (-not (Test-Path -LiteralPath $Folder)) {
+                    New-Item -Path $Folder -ItemType Directory -Force | Out-Null
+                }
+                $Path = Join-Path $Folder ("summary-{0}-to-{1}.txt" -f $Period.From, $Period.To)
+                Write-TextFile -Path $Path -Text $Text
+                $Message = "Saved to $Path"
+            }
+            default { return }
+        }
+    }
+}
+
+function Invoke-Archive {
+    <# Moves reports dated before the cutoff into archive\YYYY-MM folders. #>
+    param([Parameter(Mandatory = $true)][string]$Directory)
+
+    Write-Title "Archive Old Reports"
+    Write-Host "Archived reports move to monthly folders under 'archive'." -ForegroundColor DarkGray
+    Write-Host "They leave the resume list but Search and Summary still use them." -ForegroundColor DarkGray
+    Write-Host ""
+
+    $Days = 0
+    while ($true) {
+        $Answer = Read-Text -Prompt "Archive reports older than how many days" -Current "60"
+        if ([int]::TryParse($Answer, [ref]$Days) -and $Days -ge 1) { break }
+        Write-Host "Enter a whole number of days, 1 or more." -ForegroundColor Yellow
+    }
+
+    $Cutoff = (Get-Date).Date.AddDays(-$Days).ToString("yyyy-MM-dd")
+    $Old = @(Get-ReportFiles -Directory $Directory |
+        Where-Object { $_.Name -match '^(\d{4}-\d{2}-\d{2})-' -and $Matches[1] -lt $Cutoff } |
+        Sort-Object Name)
+
+    Write-Host ""
+    if ($Old.Count -eq 0) {
+        Write-Host "No reports dated before $Cutoff." -ForegroundColor Yellow
+        Wait-ForKey
+        return
+    }
+
+    Write-Host ("{0} report(s) dated before {1}, from {2} to {3}." -f `
+        $Old.Count, $Cutoff, $Old[0].Name.Substring(0, 10), $Old[$Old.Count - 1].Name.Substring(0, 10))
+    Write-Host ""
+    if (-not (Read-YesNo -Prompt "Move them to the archive?")) { return }
+
+    $ArchiveRoot = Join-Path $Directory "archive"
+    $Moved = 0
+    $Skipped = 0
+
+    foreach ($File in $Old) {
+        $Target = Join-Path $ArchiveRoot $File.Name.Substring(0, 7)
+        if (-not (Test-Path -LiteralPath $Target)) {
+            New-Item -Path $Target -ItemType Directory -Force | Out-Null
+        }
+
+        if (Test-Path -LiteralPath (Join-Path $Target $File.Name)) {
+            $Skipped++
+            continue
+        }
+
+        $TextFile = [System.IO.Path]::ChangeExtension($File.FullName, ".txt")
+        Move-Item -LiteralPath $File.FullName -Destination $Target
+        if ((Test-Path -LiteralPath $TextFile) -and -not (Test-Path -LiteralPath (Join-Path $Target (Split-Path -Leaf $TextFile)))) {
+            Move-Item -LiteralPath $TextFile -Destination $Target
+        }
+        $Moved++
+    }
+
+    Write-Host ""
+    Write-Host "Archived $Moved report(s) to $ArchiveRoot." -ForegroundColor Green
+    if ($Skipped -gt 0) {
+        Write-Host "$Skipped report(s) skipped because the archive already has a file with the same name." -ForegroundColor Yellow
+    }
+    Wait-ForKey
 }
 
 # ---------------------------------------------------------------------------
@@ -677,6 +1138,10 @@ function Select-ExistingReport {
         }
 
         Write-Host ""
+        if (Test-Path -LiteralPath (Join-Path $Directory "archive")) {
+            Write-Host "Archived reports are not listed here. Search still finds them." -ForegroundColor DarkGray
+            Write-Host ""
+        }
         if ($Shown -lt $Files.Count) {
             Write-Host " A. Show all $($Files.Count) reports"
         }
@@ -743,6 +1208,9 @@ function Show-Editor {
     $Selected = @{ Planned = 0; Entries = 0 }
     $Message = ""
     $MessageColor = "Green"
+
+    # Earlier entries, loaded once, for the suggestions shown when adding an entry
+    $History = Get-EntryHistory -Directory (Split-Path -Parent $Report.StatePath) -ExcludePath $Report.StatePath
 
     while ($true) {
         foreach ($Name in @("Planned", "Entries")) {
@@ -811,7 +1279,7 @@ function Show-Editor {
             }
             65 {
                 # A - add shift entry
-                $Entry = Read-NewEntry
+                $Entry = Read-NewEntry -Suggestions (Get-EntrySuggestions -Report $Report -History $History)
                 if ($Entry) {
                     $Selected["Entries"] = Add-EntryInOrder -Report $Report -Entry $Entry
                     $Active = "Entries"
@@ -911,8 +1379,13 @@ function Show-Editor {
             67 {
                 # C - copy
                 Save-Report -Report $Report
-                Set-Clipboard -Value ((Get-ReportText -Report $Report) -join "`r`n")
-                $Message = "Report copied to the clipboard."
+                if (Copy-ToClipboard -Text ((Get-ReportText -Report $Report) -join "`r`n")) {
+                    $Message = "Report copied to the clipboard."
+                }
+                else {
+                    $Message = "Could not reach the clipboard. Use Preview or the saved .txt file instead."
+                    $MessageColor = "Yellow"
+                }
             }
             83 {
                 # S - save
@@ -961,7 +1434,7 @@ function Start-NewReport {
     Write-Title "New Shift Report"
 
     $Technician = Read-Text -Prompt "Technician" -Current $DefaultTechnician -Required
-    $ReportDate = Read-ReportDate
+    $ReportDate = Read-Date
     $Shift = Read-Choice -Title "Shift" -Options $ShiftNames -Current $DefaultShift -AllowOther
 
     $Report = New-Report -Directory $Directory -Technician $Technician -ReportDate $ReportDate -Shift $Shift
@@ -1012,7 +1485,10 @@ while ($true) {
     Write-Title "Shift Report"
     Write-Host "1. Start a new report"
     Write-Host "2. Resume an existing report"
-    Write-Host "3. Exit"
+    Write-Host "3. Search reports"
+    Write-Host "4. Summary"
+    Write-Host "5. Archive old reports"
+    Write-Host "6. Exit"
     Write-Host ""
 
     $Choice = Read-Host "Select an option"
@@ -1043,7 +1519,10 @@ while ($true) {
                 }
             }
         }
-        "3" { exit 0 }
+        "3" { Show-Search -Directory $ReportDirectory }
+        "4" { Show-Summary -Directory $ReportDirectory }
+        "5" { Invoke-Archive -Directory $ReportDirectory }
+        "6" { exit 0 }
         default {
             Write-Host "Invalid option." -ForegroundColor Yellow
             Start-Sleep -Seconds 1
