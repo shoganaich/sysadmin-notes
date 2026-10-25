@@ -10,7 +10,7 @@ Quick reference for Windows and domain support, organized by the problem you are
 - Commands marked **RSAT** need the Active Directory PowerShell module (Remote Server Administration Tools).
 - PowerShell can run every command on this page, including the classic CMD tools like `ipconfig` and `nltest`.
 
-Related notes: [Network Port Cheatsheet](network-port-cheatsheet.md) for port tests, and the [AD Toolkit](../scripts/powershell/ad-toolkit/) for menu-driven versions of the AD checks.
+Related notes: [Network Port Cheatsheet](network-port-cheatsheet.md) for port tests, and the [Service Desk Toolkit](../scripts/powershell/servicedesk-toolkit/) for menu-driven versions of many of these checks.
 
 ---
 

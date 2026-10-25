@@ -18,7 +18,7 @@ Notes, commands, procedures, and reference material for supporting Windows works
 
 ### Related scripts
 
-- [AD Toolkit](../scripts/powershell/ad-toolkit/) - Menu-driven Active Directory toolkit for Service Desk tasks
+- [Service Desk Toolkit](../scripts/powershell/servicedesk-toolkit/) - Menu-driven toolkit for common Service Desk tickets
 - [Windows Cleanup](../scripts/powershell/windows-cleanup/) - Automated version of the cleanup procedure
 - [Service Manager](../scripts/powershell/service-manager/) - Manage a Windows service across many computers
 

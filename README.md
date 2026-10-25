@@ -54,7 +54,7 @@ Step-by-step procedures written for real support work, with safety checks and es
 
 | Script | Language | What it does |
 |---|---|---|
-| [AD Toolkit](scripts/powershell/ad-toolkit/) | PowerShell + Batch | Menu-driven toolkit for common Service Desk AD tasks: user and computer lookups, account status, unlocks, password resets, LAPS, and DNS/DHCP checks |
+| [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/) | PowerShell + Batch | Menu-driven toolkit for Service Desk tickets: AD user and computer lookups, lockout source, unlocks and password resets, LAPS, PC health check, user messages, and remote Group Policy updates |
 | [Windows Cleanup](scripts/powershell/windows-cleanup/) | PowerShell | Automated version of the cleanup procedure, with a report of what was done and how much space was recovered |
 | [Service Manager](scripts/powershell/service-manager/) | PowerShell | Check, start, stop, or restart a service across many computers using number ranges like `070-085` |
 | [GPS Locator](scripts/powershell/gps-locator/) | PowerShell + Batch | Reads the latest NMEA fix from a remote computer's GPS log and opens it in Google Maps |
@@ -78,7 +78,7 @@ sysadmin-notes/
 │       └── winre-uefi-advanced-troubleshooting.md
 └── scripts/
     ├── powershell/
-    │   ├── ad-toolkit/
+    │   ├── servicedesk-toolkit/
     │   ├── gps-locator/
     │   ├── service-manager/
     │   └── windows-cleanup/
