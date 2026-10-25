@@ -66,6 +66,7 @@ The first time the script runs, it creates `shift-log-config.json` next to itsel
 
 ```json
 {
+  "company": "",
   "technician": "",
   "defaultShift": "",
   "shifts": ["T1", "T2", "T3"],
@@ -82,6 +83,7 @@ Edit it in any text editor. The changes apply the next time you start the script
 
 | Setting | What it does |
 |---|---|
+| `company` | The company you work for. Every new report is saved with it, and it appears at the top of the report. Leave it empty if you don't need it. |
 | `technician` | Your name, offered as the default on every new report. Empty uses the name from your last report, then your Windows user name. |
 | `defaultShift` | Shift offered by default. Empty uses the shift from your last report. |
 | `shifts` | The shift names in the menu. **Other** is always added for anything else. |
@@ -96,6 +98,7 @@ Any setting you leave out uses its default, so the file can be as short as:
 
 ```json
 {
+  "company": "Example Port Ltd",
   "technician": "Jane Doe",
   "shifts": ["Morning", "Afternoon", "Night"],
   "entryCategories": ["Incident", "Request", "RDT Replacement", "GPS Report"]
@@ -107,6 +110,22 @@ If the file has a mistake, the script lists each problem and stops instead of gu
 The entry and planned work statuses are not configurable. The carry-over to the next shift, the summary's resolved-on-shift figure, and validation all depend on them.
 
 Changing `shifts` or `entryCategories` does not change existing reports. Old reports keep the names they were saved with, and Search and Summary still include them.
+
+### Changing companies
+
+When you change jobs, change `company` (and usually `shifts` and `entryCategories`) in the config file. Your old reports stay as they are, still saved with the old company, and everything keeps working:
+
+| Feature | With more than one company |
+|---|---|
+| New report | Carries over open items only from your last report for the current company |
+| Entry suggestions | Come only from reports for the current company |
+| Resume | Lists every report, with its company |
+| Search | Asks which company to search, or all of them. Enter picks the current one. Results from all companies show the company name. |
+| Summary | Asks which company to summarise, or all of them. The company is shown at the top and in the saved file name. |
+
+The company question only appears once reports from more than one company exist.
+
+Reports saved before you set `company` have no company. When you set it, the script offers once at startup to tag those reports with it. It changes only the company and keeps their dates, so the resume list stays in the same order. Answer N if they belong to a different company; you will be asked again next time you start the script.
 
 ### Main menu
 
@@ -222,6 +241,7 @@ Archived reports leave the resume list but are still used by Search and Summary.
 SHIFT REPORT
 ============
 
+Company    : Example Port Ltd
 Date       : 2026-10-13
 Technician : Jane Doe
 Shift      : T3

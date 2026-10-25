@@ -49,6 +49,7 @@ $ErrorActionPreference = "Stop"
 # Written as shift-log-config.json on first run. Keys missing from that file fall back to these.
 $DefaultConfigJson = @'
 {
+  "company": "",
   "technician": "",
   "defaultShift": "",
   "shifts": ["T1", "T2", "T3"],
@@ -430,10 +431,10 @@ function Get-ReportText {
 
     $Lines = New-Object System.Collections.Generic.List[string]
 
+    $Lines.AddRange([string[]]@("SHIFT REPORT", "============", ""))
+    if ($Report.Company) { $Lines.Add("Company    : $($Report.Company)") }
+
     $Lines.AddRange([string[]]@(
-        "SHIFT REPORT",
-        "============",
-        "",
         "Date       : $($Report.ReportDate)",
         "Technician : $($Report.Technician)",
         "Shift      : $($Report.Shift)",
@@ -542,7 +543,8 @@ function Save-Report {
     Write-TextFile -Path $Report.ReportPath -Text "$Text`r`n"
 
     $State = [PSCustomObject]@{
-        Version      = 3
+        Version      = 4
+        Company      = $Report.Company
         Technician   = $Report.Technician
         ReportDate   = $Report.ReportDate
         Shift        = $Report.Shift
@@ -560,7 +562,8 @@ function New-Report {
         [Parameter(Mandatory = $true)][string]$Directory,
         [Parameter(Mandatory = $true)][string]$Technician,
         [Parameter(Mandatory = $true)][string]$ReportDate,
-        [Parameter(Mandatory = $true)][string]$Shift
+        [Parameter(Mandatory = $true)][string]$Shift,
+        [string]$Company = ""
     )
 
     $Now = Get-Date
@@ -570,6 +573,7 @@ function New-Report {
         $ReportDate, $SafeTechnician, $SafeShift, $Now.ToString("HHmmss")
 
     return [PSCustomObject]@{
+        Company     = $Company
         Technician  = $Technician
         ReportDate  = $ReportDate
         Shift       = $Shift
@@ -582,7 +586,7 @@ function New-Report {
 }
 
 function Import-Report {
-    <# Loads a report state file. Reads version 2 files written by the original script too. #>
+    <# Loads a report state file. Reads version 2 files written by the original script too; those have no company. #>
     param([Parameter(Mandatory = $true)][string]$StatePath)
 
     $State = Get-Content -LiteralPath $StatePath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -622,6 +626,7 @@ function Import-Report {
     }
 
     return [PSCustomObject]@{
+        Company     = [string]$State.Company
         Technician  = [string]$State.Technician
         ReportDate  = [string]$State.ReportDate
         Shift       = [string]$State.Shift
@@ -700,26 +705,28 @@ function Import-AllReports {
 }
 
 function Get-EntryHistory {
-    <# Entries from the most recent other reports, newest first. #>
+    <# Entries from the most recent other reports of the same company, newest first. #>
     param(
         [Parameter(Mandatory = $true)][string]$Directory,
         [string]$ExcludePath = "",
+        [string]$Company = "",
         [int]$ReportCount = 30
     )
 
     $Entries = New-Object System.Collections.ArrayList
-    $Files = @(Get-ReportFiles -Directory $Directory -Recurse |
-        Where-Object { $_.FullName -ne $ExcludePath } |
-        Select-Object -First $ReportCount)
+    $Used = 0
 
-    foreach ($File in $Files) {
-        try {
-            $Saved = Import-Report -StatePath $File.FullName
-            for ($Index = $Saved.Entries.Count - 1; $Index -ge 0; $Index--) {
-                $null = $Entries.Add($Saved.Entries[$Index])
-            }
+    foreach ($File in @(Get-ReportFiles -Directory $Directory -Recurse)) {
+        if ($Used -ge $ReportCount) { break }
+        if ($File.FullName -eq $ExcludePath) { continue }
+
+        try { $Saved = Import-Report -StatePath $File.FullName } catch { continue }
+        if ($Saved.Company -ne $Company) { continue }
+
+        for ($Index = $Saved.Entries.Count - 1; $Index -ge 0; $Index--) {
+            $null = $Entries.Add($Saved.Entries[$Index])
         }
-        catch { }
+        $Used++
     }
 
     return ,$Entries
@@ -864,7 +871,8 @@ function Get-PeriodRange {
 function Get-SummaryText {
     param(
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Reports,
-        [Parameter(Mandatory = $true)]$Period
+        [Parameter(Mandatory = $true)]$Period,
+        [string]$Company = ""
     )
 
     $InRange = @($Reports | Where-Object { $_.ReportDate -ge $Period.From -and $_.ReportDate -le $Period.To })
@@ -876,7 +884,10 @@ function Get-SummaryText {
     $Lines.AddRange([string[]]@(
         "SHIFT SUMMARY",
         "=============",
-        "",
+        ""
+    ))
+    if ($Company) { $Lines.Add("Company     : $Company") }
+    $Lines.AddRange([string[]]@(
         "Period      : $($Period.Label) ($($Period.From) to $($Period.To))",
         "Reports     : $($InRange.Count)"
     ))
@@ -953,13 +964,48 @@ function Get-SummaryText {
     return $Lines.ToArray()
 }
 
+function Select-CompanyScope {
+    <#
+        When the reports come from more than one company, asks which one to use.
+        Enter keeps the company from the config file. Returns the chosen reports,
+        a label for them, and whether all companies were picked.
+    #>
+    param([Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Reports)
+
+    $NoCompany = "(no company)"
+    $AllCompanies = "All companies"
+    $Companies = @($Reports | ForEach-Object { if ($_.Company) { $_.Company } else { $NoCompany } } | Sort-Object -Unique)
+
+    if ($Companies.Count -le 1) {
+        $Label = ""
+        if ($Companies.Count -eq 1 -and $Companies[0] -ne $NoCompany) { $Label = $Companies[0] }
+        return [PSCustomObject]@{ Reports = $Reports; Label = $Label; All = $false }
+    }
+
+    $Current = ""
+    if ($Config.company -and $Companies -contains $Config.company) { $Current = $Config.company }
+    $Choice = Read-Choice -Title "Company" -Options ([string[]]($Companies + $AllCompanies)) -Current $Current
+
+    if ($Choice -eq $AllCompanies) {
+        return [PSCustomObject]@{ Reports = $Reports; Label = $AllCompanies; All = $true }
+    }
+
+    $Wanted = $Choice
+    if ($Choice -eq $NoCompany) { $Wanted = "" }
+    $Chosen = @($Reports | Where-Object { $_.Company -eq $Wanted })
+    return [PSCustomObject]@{ Reports = $Chosen; Label = $Choice; All = $false }
+}
+
 function Show-Search {
     param([Parameter(Mandatory = $true)][string]$Directory)
 
-    $Reports = Import-AllReports -Directory $Directory
+    Write-Title "Search Reports"
+    $Scope = Select-CompanyScope -Reports (Import-AllReports -Directory $Directory)
+    $Reports = $Scope.Reports
 
     while ($true) {
         Write-Title "Search Reports"
+        if ($Scope.Label) { Write-Host "Company: $($Scope.Label)" -ForegroundColor Cyan }
         Write-Host "Searches every field of $($Reports.Count) reports, archived ones included." -ForegroundColor DarkGray
         Write-Host "Case and accents are ignored. Leave empty to return." -ForegroundColor DarkGray
         Write-Host ""
@@ -977,7 +1023,13 @@ function Show-Search {
             Write-Host "$($Results.Count) match(es) for '$Term', newest first:" -ForegroundColor Green
             Write-Host ""
             foreach ($Result in $Results) {
-                Write-Host ("{0} {1,-3} " -f $Result.Report.ReportDate, $Result.Report.Shift) -ForegroundColor DarkGray -NoNewline
+                $Prefix = "{0} {1,-3} " -f $Result.Report.ReportDate, $Result.Report.Shift
+                if ($Scope.All) {
+                    $Company = $Result.Report.Company
+                    if (-not $Company) { $Company = "no company" }
+                    $Prefix += "[$Company] "
+                }
+                Write-Host $Prefix -ForegroundColor DarkGray -NoNewline
                 Write-Host $Result.Line
             }
         }
@@ -990,8 +1042,9 @@ function Show-Summary {
     param([Parameter(Mandatory = $true)][string]$Directory)
 
     Write-Title "Shift Summary"
+    $Scope = Select-CompanyScope -Reports (Import-AllReports -Directory $Directory)
     $Period = Get-PeriodRange
-    $Lines = Get-SummaryText -Reports (Import-AllReports -Directory $Directory) -Period $Period
+    $Lines = Get-SummaryText -Reports $Scope.Reports -Period $Period -Company $Scope.Label
     $Text = ($Lines -join "`r`n") + "`r`n"
     $Message = ""
     $MessageColor = "Green"
@@ -1026,7 +1079,10 @@ function Show-Summary {
                 if (-not (Test-Path -LiteralPath $Folder)) {
                     New-Item -Path $Folder -ItemType Directory -Force | Out-Null
                 }
-                $Path = Join-Path $Folder ("summary-{0}-to-{1}.txt" -f $Period.From, $Period.To)
+                $Name = "summary-{0}-to-{1}.txt" -f $Period.From, $Period.To
+                $Slug = ($Scope.Label -replace '[^A-Za-z0-9]+', '-').Trim('-').ToLowerInvariant()
+                if ($Slug) { $Name = "summary-$Slug-{0}-to-{1}.txt" -f $Period.From, $Period.To }
+                $Path = Join-Path $Folder $Name
                 Write-TextFile -Path $Path -Text $Text
                 $Message = "Saved to $Path"
             }
@@ -1099,6 +1155,48 @@ function Invoke-Archive {
     Wait-ForKey
 }
 
+function Invoke-CompanyTagging {
+    <# Offers to tag reports saved without a company with the company from the config file. #>
+    param([Parameter(Mandatory = $true)][string]$Directory)
+
+    if (-not $Config.company) { return }
+
+    $Untagged = New-Object System.Collections.ArrayList
+    foreach ($File in @(Get-ReportFiles -Directory $Directory -Recurse)) {
+        try { $State = Get-Content -LiteralPath $File.FullName -Raw -Encoding UTF8 | ConvertFrom-Json } catch { continue }
+        if (-not $State.Company) { $null = $Untagged.Add($File) }
+    }
+    if ($Untagged.Count -eq 0) { return }
+
+    Write-Title "Reports Without A Company"
+    Write-Host "$($Untagged.Count) report(s) were saved without a company, most likely before one was set."
+    Write-Host ""
+    Write-Host "Tag them as '$($Config.company)' so they are included when you search or summarise it."
+    Write-Host "Answer N if they belong to another company. You will be asked again next time." -ForegroundColor DarkGray
+    Write-Host ""
+
+    if (-not (Read-YesNo -Prompt "Tag them as '$($Config.company)'?")) { return }
+
+    $Tagged = 0
+    foreach ($File in $Untagged) {
+        $Modified = $File.LastWriteTime
+        $Report = Import-Report -StatePath $File.FullName
+        $Report.Company = $Config.company
+        Save-Report -Report $Report
+
+        # Keep the original dates so the resume list stays in the same order
+        (Get-Item -LiteralPath $Report.StatePath).LastWriteTime = $Modified
+        if (Test-Path -LiteralPath $Report.ReportPath) {
+            (Get-Item -LiteralPath $Report.ReportPath).LastWriteTime = $Modified
+        }
+        $Tagged++
+    }
+
+    Write-Host ""
+    Write-Host "Tagged $Tagged report(s) as '$($Config.company)'." -ForegroundColor Green
+    Wait-ForKey
+}
+
 # ---------------------------------------------------------------------------
 # Screens
 # ---------------------------------------------------------------------------
@@ -1152,7 +1250,9 @@ function Select-ExistingReport {
             $File = $Files[$Index]
             try {
                 $State = Get-Content -LiteralPath $File.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-                Write-Host ("{0,2}. {1} | {2} | {3}" -f ($Index + 1), $State.ReportDate, $State.Shift, $State.Technician)
+                $Parts = @($State.ReportDate, $State.Shift, $State.Technician)
+                if ($State.Company) { $Parts += $State.Company }
+                Write-Host ("{0,2}. {1}" -f ($Index + 1), ($Parts -join " | "))
                 Write-Host ("    Planned: {0} | Entries: {1} | Modified: {2}" -f `
                     @($State.PlannedWork).Count, @($State.Entries).Count,
                     $File.LastWriteTime.ToString("yyyy-MM-dd HH:mm")) -ForegroundColor DarkGray
@@ -1235,7 +1335,8 @@ function Show-Editor {
     $MessageColor = "Green"
 
     # Earlier entries, loaded once, for the suggestions shown when adding an entry
-    $History = Get-EntryHistory -Directory (Split-Path -Parent $Report.StatePath) -ExcludePath $Report.StatePath
+    $History = Get-EntryHistory -Directory (Split-Path -Parent $Report.StatePath) `
+        -ExcludePath $Report.StatePath -Company $Report.Company
 
     while ($true) {
         foreach ($Name in @("Planned", "Entries")) {
@@ -1247,6 +1348,7 @@ function Show-Editor {
         $Index = $Selected[$Active]
 
         Write-Title "Shift Report Editor"
+        if ($Report.Company) { Write-Host "Company    : $($Report.Company)" }
         Write-Host "Date       : $($Report.ReportDate)"
         Write-Host "Technician : $($Report.Technician)"
         Write-Host "Shift      : $($Report.Shift)"
@@ -1442,11 +1544,14 @@ function Show-Editor {
 function Start-NewReport {
     param([Parameter(Mandatory = $true)][string]$Directory)
 
-    # The most recent report supplies defaults and any open items to hand over
+    # The most recent report for this company supplies defaults and any open items to hand over
     $Previous = $null
-    $Files = @(Get-ReportFiles -Directory $Directory)
-    if ($Files.Count -gt 0) {
-        try { $Previous = Import-Report -StatePath $Files[0].FullName } catch { $Previous = $null }
+    foreach ($File in @(Get-ReportFiles -Directory $Directory)) {
+        try { $Candidate = Import-Report -StatePath $File.FullName } catch { continue }
+        if ($Candidate.Company -eq $Config.company) {
+            $Previous = $Candidate
+            break
+        }
     }
 
     # The config file wins, then the last report, then the Windows user name
@@ -1465,7 +1570,8 @@ function Start-NewReport {
     $ReportDate = Read-Date
     $Shift = Read-Choice -Title "Shift" -Options $ShiftNames -Current $DefaultShift -AllowOther
 
-    $Report = New-Report -Directory $Directory -Technician $Technician -ReportDate $ReportDate -Shift $Shift
+    $Report = New-Report -Directory $Directory -Technician $Technician -ReportDate $ReportDate `
+        -Shift $Shift -Company $Config.company
 
     if ($Previous) {
         $OpenItems = Get-OpenItems -Report $Previous
@@ -1536,7 +1642,7 @@ function Import-Config {
 
     $Problems = New-Object System.Collections.Generic.List[string]
 
-    foreach ($Name in @("technician", "defaultShift", "reportDirectory")) {
+    foreach ($Name in @("company", "technician", "defaultShift", "reportDirectory")) {
         if ($Config[$Name] -isnot [string]) {
             $Problems.Add("'$Name' must be text in quotes, for example `"`".")
         }
@@ -1636,6 +1742,8 @@ if (-not (Test-Path -LiteralPath $ReportDirectory)) {
     New-Item -Path $ReportDirectory -ItemType Directory -Force | Out-Null
 }
 
+Invoke-CompanyTagging -Directory $ReportDirectory
+
 while ($true) {
     Write-Title "Shift Report"
     Write-Host "1. Start a new report"
@@ -1645,6 +1753,7 @@ while ($true) {
     Write-Host "5. Archive old reports"
     Write-Host "6. Exit"
     Write-Host ""
+    if ($Config.company) { Write-Host "Company : $($Config.company)" -ForegroundColor DarkGray }
     Write-Host "Config  : $($Config.Path)" -ForegroundColor DarkGray
     Write-Host "Reports : $ReportDirectory" -ForegroundColor DarkGray
     if ($Config.Created) {
