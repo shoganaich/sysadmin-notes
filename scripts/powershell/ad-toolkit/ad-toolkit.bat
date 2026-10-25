@@ -24,9 +24,9 @@ echo.
 echo Network / DNS-DHCP
 echo ------------------
 echo 8. Check DNS and DHCP records
-echo 9. Repair DNS registration
-echo 10. Remove stale DNS records
-echo 11. Renew DHCP lease remotely
+echo 9. Repair DNS registration    (planned)
+echo 10. Remove stale DNS records  (planned)
+echo 11. Renew DHCP lease remotely (planned)
 echo.
 echo Administrative actions
 echo ----------------------
@@ -37,26 +37,31 @@ echo 14. Exit
 echo.
 
 set "option="
+set "script_name="
 set /p "option=Select an option: "
 
-if "%option%"=="1" call :run_script "search-user.ps1"
-if "%option%"=="2" call :run_script "check-account-status.ps1"
-if "%option%"=="3" call :run_script "view-user-groups.ps1"
+if "%option%"=="1" set "script_name=search-user.ps1"
+if "%option%"=="2" set "script_name=check-account-status.ps1"
+if "%option%"=="3" set "script_name=view-user-groups.ps1"
 
-if "%option%"=="4" call :run_script "search-computer.ps1"
-if "%option%"=="5" call :run_script "test-computer-connectivity.ps1"
-if "%option%"=="6" call :run_script "view-computer-details.ps1"
-if "%option%"=="7" call :run_script "check-laps-information.ps1"
+if "%option%"=="4" set "script_name=search-computer.ps1"
+if "%option%"=="5" set "script_name=test-computer-connectivity.ps1"
+if "%option%"=="6" set "script_name=view-computer-details.ps1"
+if "%option%"=="7" set "script_name=check-laps-information.ps1"
 
-if "%option%"=="8" call :run_script "check-dns-dhcp.ps1"
-if "%option%"=="9" call :run_script "repair-dns-registration.ps1"
-if "%option%"=="10" call :run_script "remove-stale-dns-records.ps1"
-if "%option%"=="11" call :run_script "renew-dhcp-lease.ps1"
+if "%option%"=="8" set "script_name=check-dns-dhcp.ps1"
+if "%option%"=="9" set "script_name=repair-dns-registration.ps1"
+if "%option%"=="10" set "script_name=remove-stale-dns-records.ps1"
+if "%option%"=="11" set "script_name=renew-dhcp-lease.ps1"
 
-if "%option%"=="12" call :run_script "unlock-account.ps1"
-if "%option%"=="13" call :run_script "reset-password.ps1"
+if "%option%"=="12" set "script_name=unlock-account.ps1"
+if "%option%"=="13" set "script_name=reset-password.ps1"
 
 if "%option%"=="14" goto exit_tool
+
+rem Use goto instead of call so each menu selection does not nest
+rem another batch context.
+if defined script_name goto run_script
 
 echo.
 echo [ERROR] Invalid option.
@@ -67,11 +72,10 @@ goto menu
 :run_script
 cls
 
-set "script_name=%~1"
 set "script_path=%~dp0scripts\%script_name%"
 
 if not exist "%script_path%" (
-    echo [ERROR] Script not found:
+    echo [INFO] This tool is not available yet:
     echo.
     echo %script_path%
     echo.

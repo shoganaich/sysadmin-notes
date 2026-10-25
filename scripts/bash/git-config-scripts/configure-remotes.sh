@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+# Run this from inside the sysadmin-notes repository.
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "ERROR: Not inside a Git repository. cd into sysadmin-notes first."
+    exit 1
+fi
+
 GITHUB_REMOTE="git@github.com:shoganaich/sysadmin-notes.git"
 GITLAB_REMOTE="git@gitlab.com:shoganaich/sysadmin-notes.git"
 FORGEJO_REMOTE="git@git.wyrmnet.link:shoganaich/sysadmin-notes.git"

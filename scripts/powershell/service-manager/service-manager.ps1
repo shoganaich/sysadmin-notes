@@ -438,21 +438,22 @@ function Select-Action {
 
 Write-SectionHeader "Service Manager"
 Write-Host "Examples: 020, 030, 070-140, 020, 030, 070-085, 112" -ForegroundColor DarkGray
-Write-Host "Type 'q' or 'quit' at any prompt to exit." -ForegroundColor DarkGray
+Write-Host "Type 'q' or 'quit' at the computer prompt to exit." -ForegroundColor DarkGray
 
 $applicationRunning = $true
 
 while ($applicationRunning) {
     # Main loop: collect the target computers, choose the service and action, and apply it.
     Write-SectionHeader "Computer Selection"
-    $input = Read-Host "Enter computers to manage"
+    # Note: $input is a PowerShell automatic variable, so use a different name.
+    $computerInput = Read-Host "Enter computers to manage"
 
-    if ($input -match "^(q|quit|exit)$") {
+    if ($computerInput -match "^\s*(q|quit|exit)\s*$") {
         break
     }
 
     try {
-        $computers = ConvertTo-ComputerList -InputText $input
+        $computers = ConvertTo-ComputerList -InputText $computerInput
     }
     catch {
         Show-Message -Message $_.Exception.Message -Title "Invalid computer input"

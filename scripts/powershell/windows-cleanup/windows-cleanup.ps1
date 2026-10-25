@@ -71,6 +71,10 @@ param (
 
 $ErrorActionPreference = "Continue"
 
+# Capture how many parameters were passed to the script. This must be read
+# at script level; inside a function $PSBoundParameters refers to the function.
+$ScriptParameterCount = $PSBoundParameters.Count
+
 # ============================================================
 # Administrator validation
 # ============================================================
@@ -197,12 +201,14 @@ function Write-Step {
 }
 
 function Set-InteractiveOptions {
-    if (-not $Interactive -and $PSBoundParameters.Count -gt 0) {
+    # $PSBoundParameters inside a function only contains that function's own
+    # parameters, so use the script-level count captured at startup instead.
+    if (-not $Interactive -and $ScriptParameterCount -gt 0) {
         return
     }
 
     Write-Host ""
-    Write-Host "Interactive mode is enabled by default." -ForegroundColor Cyan
+    Write-Host "No options were specified, so interactive mode is enabled." -ForegroundColor Cyan
     Write-Host "Select the cleanup actions to run." -ForegroundColor Cyan
 
     $response = Read-Host "Run health checks (DISM / SFC / CHKDSK)? [Y/N]"
@@ -262,22 +268,39 @@ function Clear-FolderContent {
             return
         }
 
+        $RemoveErrors = @()
+
         $Items |
             Remove-Item `
                 -Recurse `
                 -Force `
-                -ErrorAction SilentlyContinue
+                -ErrorAction SilentlyContinue `
+                -ErrorVariable +RemoveErrors
 
-        Write-Host "Cleanup completed: $Path" `
-            -ForegroundColor Green
+        if ($RemoveErrors.Count -gt 0) {
+            Write-Host (
+                "Cleanup completed: $Path " +
+                "($($RemoveErrors.Count) item(s) skipped, probably in use)"
+            ) -ForegroundColor Yellow
 
-        Add-CleanupResult `
-            -Task $TaskName `
-            -Status "Completed" `
-            -Details (
-                "Removed available files from $Path. " +
-                "Files currently in use may have been skipped."
-            )
+            Add-CleanupResult `
+                -Task $TaskName `
+                -Status "Completed" `
+                -Details (
+                    "Removed available files from $Path. " +
+                    "$($RemoveErrors.Count) item(s) could not be removed, " +
+                    "usually because they were in use."
+                )
+        }
+        else {
+            Write-Host "Cleanup completed: $Path" `
+                -ForegroundColor Green
+
+            Add-CleanupResult `
+                -Task $TaskName `
+                -Status "Completed" `
+                -Details "Removed all files from $Path."
+        }
     }
     catch {
         Write-Host "Unable to fully clean: $Path" `
@@ -373,6 +396,40 @@ catch {
 }
 
 Set-InteractiveOptions
+
+# ============================================================
+# Check which profile will be cleaned
+# ============================================================
+
+# When a standard user's session is elevated with a separate admin account,
+# $env:TEMP, HKCU, the Recycle Bin and the Teams caches all belong to the
+# admin account, not to the signed-in user.
+try {
+    $ConsoleUser = (Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop).UserName
+
+    if ($ConsoleUser -and $ConsoleUser -ne $CurrentIdentity.Name) {
+        Write-Host ""
+        Write-Host "[WARNING] The script is running as '$($CurrentIdentity.Name)'," `
+            -ForegroundColor Yellow
+        Write-Host "but the signed-in user is '$ConsoleUser'." `
+            -ForegroundColor Yellow
+        Write-Host (
+            "User temp files, Teams caches, the Recycle Bin, and Storage Sense " +
+            "will be cleaned for '$($CurrentIdentity.Name)', not '$ConsoleUser'."
+        ) -ForegroundColor Yellow
+
+        Add-CleanupResult `
+            -Task "Check target user profile" `
+            -Status "Warning" `
+            -Details (
+                "Running as $($CurrentIdentity.Name) while $ConsoleUser is signed in. " +
+                "Per-user cleanup applied to $($CurrentIdentity.Name)."
+            )
+    }
+}
+catch {
+    # Not critical. Continue without the check.
+}
 
 Write-Host ""
 Write-Host "============================================================" `
@@ -656,7 +713,8 @@ try {
         Write-Host "Delivery Optimization cache cleared." `
             -ForegroundColor Green
 
-        Add-CleanupResult `  -Task "Clear Delivery Optimization cache" `
+        Add-CleanupResult `
+            -Task "Clear Delivery Optimization cache" `
             -Status "Completed" `
             -Details "Delivery Optimization cache cleanup completed."
     }

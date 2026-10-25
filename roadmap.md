@@ -2,7 +2,7 @@
 
 ## Goal
 
-Develop a nice skillset for advancing on the carrer.
+Build the skill set needed to move from Service Desk into System Administration.
 
 ---
 
@@ -173,7 +173,7 @@ You stop blaming random things for DNS problems.
 
 ## Phase 5: PowerShell
 
-**Goal:** Automating tasks intead of manually doing things.
+**Goal:** Automating tasks instead of manually doing things.
 
 ### Learn
 
@@ -212,7 +212,7 @@ You become more efficient than people doing everything manually.
 
 ## Phase 6: Linux Administration
 
-**Goal:** Formalize what is already know.
+**Goal:** Formalize what I already know.
 
 ### Learn
 
@@ -403,7 +403,7 @@ You start thinking at scale.
 
 ## Phase 12: Docker
 
-**Goal:** Understand containers services.
+**Goal:** Understand containerized services.
 
 ### Learn
 

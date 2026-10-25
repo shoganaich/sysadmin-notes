@@ -94,15 +94,15 @@ Review relevant DNS and DHCP details for a target device or record, including:
 - DHCP lease information
 - Basic environment validation
 
-#### Repair DNS Registration
+#### Repair DNS Registration *(planned)*
 
 Attempt to fix stale or broken DNS records for a selected computer.
 
-#### Remove Stale DNS Records
+#### Remove Stale DNS Records *(planned)*
 
 Identify and remove outdated DNS entries that may no longer be valid.
 
-#### Renew DHCP Lease Remotely
+#### Renew DHCP Lease Remotely *(planned)*
 
 Trigger a DHCP lease refresh on a remote device when appropriate.
 
@@ -135,6 +135,8 @@ ad-toolkit/
     |-- search-computer.ps1
     |-- test-computer-connectivity.ps1
     |-- view-computer-details.ps1
+    |-- check-laps-information.ps1
+    |-- check-dns-dhcp.ps1
     |-- unlock-account.ps1
     `-- reset-password.ps1
 ```
@@ -147,6 +149,13 @@ The toolkit was built and tested with:
 - Active Directory PowerShell module
 - RSAT Active Directory tools
 - Access to an Active Directory domain
+
+Some tools need additional modules:
+
+| Tool | Additional requirement |
+|---|---|
+| Check LAPS information | Windows LAPS PowerShell module (`LAPS`) and permission to read LAPS passwords |
+| Check DNS and DHCP records | DHCP Server RSAT tools (`DhcpServer` module) and permission to query the DHCP servers |
 
 The account running the toolkit will need appropriate permissions for the actions being performed.
 
@@ -186,9 +195,9 @@ Computer tools
 Network / DNS-DHCP
 ------------------
 8. Check DNS and DHCP records
-9. Repair DNS registration
-10. Remove stale DNS records
-11. Renew DHCP lease remotely
+9. Repair DNS registration    (planned)
+10. Remove stale DNS records  (planned)
+11. Renew DHCP lease remotely (planned)
 
 Administrative actions
 ----------------------
@@ -200,6 +209,8 @@ Administrative actions
 
 Select an option and follow the prompts. After the script finishes, press any key to return to the menu.
 
+Options marked *(planned)* are shown in the menu but don't have a script yet. Selecting one displays a message and returns to the menu.
+
 ## Permissions
 
 Most lookup and reporting functions only require standard domain access.
@@ -208,7 +219,7 @@ Administrative actions require delegated permissions:
 
 - `Unlock-ADAccount`
 - `Set-ADAccountPassword`
-- `Set-ADUser`
+- `Set-ADUser` (for "change password at next sign-in")
 
 The toolkit uses your existing Active Directory permissions. If you can't perform an action manually, the toolkit won't be able to perform it either.
 
@@ -219,6 +230,8 @@ The toolkit uses your existing Active Directory permissions. If you can't perfor
 - Use hidden password entry whenever possible.
 - Always verify the selected account before making changes.
 - Password resets remain subject to your organization's password policy.
+- Accounts set to "Password never expires" can't also be set to "Change password at next sign-in". The reset tool warns about this before making any change.
+- The `Attribute 5` / `Phone Number` columns read `extensionAttribute5`, which is specific to the environment the toolkit was built for. Change it to the attribute your organization uses.
 - Test changes in a non-production environment before deployment.
 
 ## Notes

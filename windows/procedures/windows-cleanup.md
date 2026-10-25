@@ -6,11 +6,11 @@ Use this procedure to remove temporary files and cached data, recover disk space
 
 Some sections are optional and should only be used when needed.
 
-> **Automated option:** The PowerShell version of this procedure is available in [windows-cleanup](/scripts/powershell/windows-cleanup/). The folder contains `windows-cleanup.ps1` and its README.
+> **Automated option:** The PowerShell version of this procedure is available in [windows-cleanup](../../scripts/powershell/windows-cleanup/). The folder contains `windows-cleanup.ps1` and its README.
 
 ## Before You Start
 
-- Sign in with the affected user's account.
+- Sign in with the affected user's account. If you elevate with a separate admin account, per-user items (`%temp%`, Teams cache, Recycle Bin, Storage Sense) belong to the admin account, so clean those from the user's own session.
 - Save any open work.
 - Close running applications.
 - Open PowerShell or Command Prompt as Administrator.
@@ -23,7 +23,7 @@ To check the current free space in PowerShell:
 Get-PSDrive C |
     Select-Object Name,
     @{Name = "FreeSpaceGB"; Expression = {
-        [math\]::Round($_.Free / 1GB, 2)
+        [math]::Round($_.Free / 1GB, 2)
     }}
 ```
 
@@ -443,7 +443,7 @@ Get-ChildItem `
         @{
             Name = "SizeGB"
             Expression = {
-                [math\]::Round($_.Length / 1GB, 2)
+                [math]::Round($_.Length / 1GB, 2)
             }
         }
 ```
@@ -490,7 +490,7 @@ To check the final free space in PowerShell:
 Get-PSDrive C |
     Select-Object Name,
     @{Name = "FreeSpaceGB"; Expression = {
-        [math\]::Round($_.Free / 1GB, 2)
+        [math]::Round($_.Free / 1GB, 2)
     }}
 ```
 
@@ -516,7 +516,11 @@ A restart is recommended after:
 - Disk repairs
 - Application removal
 
-After the restart, confirm that Windows starts normally and required applicationsintenance Checklist
+After the restart, confirm that Windows starts normally and required applications work.
+
+---
+
+## Maintenance Checklist
 
 ### Cleanup
 

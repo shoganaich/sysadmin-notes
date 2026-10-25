@@ -346,16 +346,16 @@ try {
         Write-Host ""
         Write-Host "Ticket Summary" -ForegroundColor Cyan
         Write-Host "==============" -ForegroundColor Cyan
-        Write-Host "User             : $($User.SamAccountName)"
-        Write-Host "Previous status  : Locked"
-        Write-Host "Action performed : Account unlocked"
+        Write-Host "User              : $($User.SamAccountName)"
+        Write-Host "Previous status   : Locked"
+        Write-Host "Action performed  : Account unlocked"
         Write-Host "Result            : Successful"
 
         if ($PasswordHasProblem) {
-            Write-Host "Additional issue : Password expired" -ForegroundColor Yellow
+            Write-Host "Additional issue  : Password expired" -ForegroundColor Yellow
         }
         else {
-            Write-Host "Additional issue : None"
+            Write-Host "Additional issue  : None"
         }
     }
     else {

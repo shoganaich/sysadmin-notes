@@ -1,8 +1,13 @@
 ﻿param(
+    [Parameter(Mandatory = $true)]
     [string]$machine
 )
 
+# Caminho do log no computador remoto.
 $Log = "\\$machine\c$\Path\To\gps.log"
+
+# Numero de linhas do fim do log a analisar.
+$TailLines = 10
 
 if (!(Test-Path $Log)) {
     Write-Host "Log nao encontrado: $Log" -ForegroundColor Red
@@ -47,21 +52,44 @@ function Convert-NmeaCoordinate {
     return $Decimal
 }
 
-$Linha = Get-Content $Log -Tail 10 |
-         Where-Object { $_ -match '\$GPRMC,' } |
-         Select-Object -First 1
+# Aceita $GPRMC (so GPS) e $GNRMC (multi-GNSS, recetores mais recentes).
+# Usa a ULTIMA linha encontrada, ou seja, a posicao mais recente.
+$Linha = Get-Content $Log -Tail $TailLines |
+         Where-Object { $_ -match '\$G[PN]RMC,' } |
+         Select-Object -Last 1
 
 if (-not $Linha) {
-    Write-Host "Nenhuma linha GPRMC encontrada nas ultimas 10 linhas." -ForegroundColor Red
+    Write-Host "Nenhuma linha GPRMC/GNRMC encontrada nas ultimas $TailLines linhas." -ForegroundColor Red
     exit 1
 }
 
-$RMC = ($Linha -split '\$GPRMC,')[1]
-$Campos = ('$GPRMC,' + $RMC).Split(',')
+# Remove o que vem antes da frase NMEA e o checksum (*hh) no fim.
+$Frase = $Linha.Substring($Linha.IndexOf('$')) -replace '\*[0-9A-Fa-f]{2}\s*$', ''
+$Campos = $Frase.Split(',')
 
 if ($Campos.Count -lt 7) {
-    Write-Host "Linha GPRMC invalida." -ForegroundColor Red
+    Write-Host "Linha RMC invalida." -ForegroundColor Red
     exit 1
+}
+
+# Campo 2 = estado: A = posicao valida, V = sem fix (coordenadas nao fiaveis).
+if ($Campos[2] -ne 'A') {
+    Write-Host "O GPS nao tem uma posicao valida (estado '$($Campos[2])', sem fix)." -ForegroundColor Red
+    Write-Host "Linha: $Linha" -ForegroundColor DarkGray
+    exit 1
+}
+
+if ([string]::IsNullOrWhiteSpace($Campos[3]) -or [string]::IsNullOrWhiteSpace($Campos[5])) {
+    Write-Host "A linha RMC nao contem coordenadas." -ForegroundColor Red
+    exit 1
+}
+
+# Hora UTC (campo 1, hhmmss) e data (campo 9, ddmmyy) do ultimo fix, se existirem.
+$HoraFix = "N/A"
+if ($Campos.Count -gt 9 -and $Campos[1].Length -ge 6 -and $Campos[9].Length -eq 6) {
+    $HoraFix = "{0}-{1}-20{2} {3}:{4}:{5} UTC" -f `
+        $Campos[9].Substring(0,2), $Campos[9].Substring(2,2), $Campos[9].Substring(4,2),
+        $Campos[1].Substring(0,2), $Campos[1].Substring(2,2), $Campos[1].Substring(4,2)
 }
 
 try {
@@ -133,6 +161,7 @@ Write-Host " GOOGLE MAPS" -ForegroundColor Yellow
 Write-Host "=================================================================" -ForegroundColor Yellow
 Write-Host "Latitude : $LatText" -ForegroundColor Cyan
 Write-Host "Longitude: $LonText" -ForegroundColor Cyan
+Write-Host "Fix      : $HoraFix" -ForegroundColor Cyan
 Write-Host $Url -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Yellow
 Write-Host ""
@@ -140,10 +169,10 @@ Write-Host "HTML: $HtmlPath" -ForegroundColor DarkGray
 
 
 # Fluxo pretendido:
-# explorer.exe -> associacao .html -> Edge -> URL Google Maps
+# explorer.exe -> associacao .html -> browser predefinido -> URL Google Maps
 try {
     Start-Process -FilePath "$env:WINDIR\explorer.exe" -ArgumentList "`"$HtmlPath`""
-	Write-Host "Aberto com o EDGE" -ForegroundColor Green
+    Write-Host "Aberto no browser predefinido." -ForegroundColor Green
 }
 catch {
     Write-Host "Erro ao abrir o HTML com Explorer: $($_.Exception.Message)" -ForegroundColor Red

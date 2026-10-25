@@ -35,6 +35,8 @@ The script can perform the following tasks:
 
 Run the script from the Windows session of the affected user. This is important because temporary files, Teams caches, the Recycle Bin, and Storage Sense settings are specific to the signed-in user.
 
+> **Elevating with a different account:** if the user is not a local administrator and you elevate PowerShell with your own admin account, the per-user cleanup (temp files, Teams caches, Recycle Bin, Storage Sense) runs against **your** admin profile, not the user's. The script detects this, shows a warning, and records it in the report. To clean the user's own files in that case, clear them separately from their session, or use the manual procedure.
+
 ## Running the Script
 
 Open PowerShell as Administrator, go to the folder containing the script, and run:
@@ -58,6 +60,8 @@ Then run the script again:
 ## Interactive Mode
 
 When the script is started without parameters, it runs in interactive mode.
+
+If any option is passed on the command line, the script runs non-interactively with exactly those options. This makes it safe to run unattended, for example from a remote management tool. Use `-Interactive` to force the prompts even when other options are passed.
 
 You will be asked whether you want to:
 
@@ -189,4 +193,5 @@ Run health checks, skip the large-file scan, and restart when finished:
 Run the irreversible ResetBase cleanup:
 
 ```powershell
-.\windows-cleanup.ps1 -
+.\windows-cleanup.ps1 -ResetBase
+```

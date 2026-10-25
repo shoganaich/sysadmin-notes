@@ -657,6 +657,16 @@ sfc /scannow /offbootdir=W:\ /offwindir=W:\Windows
 
 Run DISM first because SFC may need the repaired component store to replace damaged files.
 
+> [!TIP]
+> In WinRE, DISM may fail with a scratch-space error because the recovery environment's `X:` drive is small. Create a scratch folder on the Windows volume and point DISM at it:
+>
+> ```cmd
+> mkdir W:\Scratch
+> dism /image:W:\ /cleanup-image /restorehealth /scratchdir:W:\Scratch
+> ```
+>
+> Delete `W:\Scratch` once Windows starts normally.
+
 Record the result of both commands.
 
 Restart and test Windows.

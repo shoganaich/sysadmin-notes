@@ -374,10 +374,40 @@ else {
 Write-Host ""
 $ChangeChoice = Read-Host "Require password change at next sign-in? (Y/N)"
 
+$SkippedNeverExpires = $false
+
 $ChangeAtNextLogon = (
     $ChangeChoice -and
     $ChangeChoice.Trim().ToUpper() -in @("Y", "YES")
 )
+
+# Active Directory does not allow "change password at next sign-in" while
+# "password never expires" is set. Catch this before the reset so the
+# technician is not told the reset failed when it actually succeeded.
+if ($ChangeAtNextLogon -and $User.PasswordNeverExpires) {
+    Write-Host ""
+    Write-Host (
+        "[WARNING] This account is set to 'Password never expires', so AD will not"
+    ) -ForegroundColor Yellow
+    Write-Host (
+        "allow 'Change password at next sign-in'. The password will be reset without it."
+    ) -ForegroundColor Yellow
+
+    $ContinueChoice = Read-Host "Continue with the reset? (Y/N)"
+
+    if (
+        -not $ContinueChoice -or
+        $ContinueChoice.Trim().ToUpper() -notin @("Y", "YES")
+    ) {
+        Write-Host ""
+        Write-Host "Operation cancelled." -ForegroundColor Yellow
+        $NewPassword = $null
+        exit 0
+    }
+
+    $ChangeAtNextLogon = $false
+    $SkippedNeverExpires = $true
+}
 
 # Reset the password.
 try {
@@ -387,40 +417,6 @@ try {
         -NewPassword $NewPassword `
         -Confirm:$false `
         -ErrorAction Stop
-
-    Set-ADUser `
-        -Identity $User.DistinguishedName `
-        -ChangePasswordAtLogon $ChangeAtNextLogon `
-        -ErrorAction Stop
-
-    Write-Host ""
-    Write-Host (
-        "The password for '$($User.SamAccountName)' was reset successfully."
-    ) -ForegroundColor Green
-
-    Write-Host ""
-    Write-Host "Ticket Summary" -ForegroundColor Cyan
-    Write-Host "==============" -ForegroundColor Cyan
-    Write-Host ""
-
-    Write-Host "User             : $($User.SamAccountName)"
-    Write-Host "Action performed : Password reset"
-    Write-Host "Result            : Successful"
-
-    if ($ChangeAtNextLogon) {
-        Write-Host "Change at sign-in : Required"
-    }
-    else {
-        Write-Host "Change at sign-in : Not required"
-    }
-
-    if ($User.LockedOut) {
-        Write-Host "Additional issue : Account was locked" `
-            -ForegroundColor Yellow
-    }
-    else {
-        Write-Host "Additional issue : None"
-    }
 }
 catch {
     Write-Host ""
@@ -438,6 +434,73 @@ finally {
     $ConfirmedPassword = $null
     $NewPasswordText = $null
     $ConfirmedPasswordText = $null
+}
+
+Write-Host ""
+Write-Host (
+    "The password for '$($User.SamAccountName)' was reset successfully."
+) -ForegroundColor Green
+
+# Set "change at next sign-in" separately, so a failure here is not
+# reported as a failed password reset.
+# A reset already clears any previous "must change" flag, so nothing needs
+# to be done when the technician answered No.
+$ChangeAtLogonText = if ($SkippedNeverExpires) {
+    "Not set (password never expires)"
+}
+else {
+    "Not required"
+}
+$ChangeAtLogonFailed = $false
+
+if ($ChangeAtNextLogon) {
+    try {
+        Set-ADUser `
+            -Identity $User.DistinguishedName `
+            -ChangePasswordAtLogon $true `
+            -ErrorAction Stop
+
+        $ChangeAtLogonText = "Required"
+    }
+    catch {
+        $ChangeAtLogonFailed = $true
+        $ChangeAtLogonText = "FAILED to set"
+
+        Write-Host ""
+        Write-Host (
+            "[WARNING] The password was reset, but 'Change password at next sign-in' could not be set."
+        ) -ForegroundColor Yellow
+
+        Write-Host "Details: $($_.Exception.Message)" `
+            -ForegroundColor DarkYellow
+
+        Write-Host "Do NOT reset the password again. Set the option manually in ADUC." `
+            -ForegroundColor Yellow
+    }
+}
+
+Write-Host ""
+Write-Host "Ticket Summary" -ForegroundColor Cyan
+Write-Host "==============" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "User              : $($User.SamAccountName)"
+Write-Host "Action performed  : Password reset"
+Write-Host "Result            : Successful"
+
+if ($ChangeAtLogonFailed) {
+    Write-Host "Change at sign-in : $ChangeAtLogonText" -ForegroundColor Yellow
+}
+else {
+    Write-Host "Change at sign-in : $ChangeAtLogonText"
+}
+
+if ($User.LockedOut) {
+    Write-Host "Additional issue  : Account was locked" `
+        -ForegroundColor Yellow
+}
+else {
+    Write-Host "Additional issue  : None"
 }
 
 exit 0

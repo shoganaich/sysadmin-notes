@@ -1,59 +1,37 @@
 # Windows Notes
 
-Collection of notes, commands, troubleshooting guides, and reference material for managing and supporting Windows environments.
+Notes, commands, procedures, and reference material for supporting Windows workstations and domain environments.
 
 ## Contents
 
-### Common Commands
+### Reference
 
-- [Common Windows Commands](common-commands.md)
-
-### Administration
-
-- [Windows Services and Processes](services-and-processes.md)
-- [Windows Event Logs](event-logs.md)
-
-### Active Directory
-
-- [Active Directory](active-directory.md)
-- [Group Policy](group-policy.md)
-- [Users and Groups](users-and-groups.md)
-
-### Networking
-
-- [Network Port Cheatsheet](network-port-cheatsheet.md)
-- [Network Ports](network-ports.md)
-- [DNS](dns.md)
-- [DHCP](dhcp.md)
-- [Windows Firewall](firewall.md)
-
-### Security and Maintenance
-
-- [Windows Security](security.md)
-- [Windows Update](windows-update.md)
-
-### Troubleshooting
-
-- [Workstation Troubleshooting](workstation-troubleshooting.md)
-- [Server Troubleshooting](server-troubleshooting.md)
-- [Domain Controller Troubleshooting](dc-troubleshooting.md)
+- [Common Windows Commands](common-commands.md) - Quick command reference for system, service, network, user, disk, and event log tasks
+- [Network Port Cheatsheet](network-port-cheatsheet.md) - Common ports for AD, DNS, DHCP, remote support, and infrastructure, with PowerShell port tests
 
 ### Procedures
 
-- [Procedures](procedures/README.md)
+- [Procedures index](procedures/README.md)
+- [Windows UEFI Boot Recovery](procedures/winre-uefi-recovery.md)
+- [Windows UEFI Boot Recovery: Advanced Troubleshooting](procedures/winre-uefi-advanced-troubleshooting.md)
+- [Windows PC Cleanup and Optimization](procedures/windows-cleanup.md)
 
-## Purpose
+### Related scripts
 
-This repository serves as a personal knowledge base and quick reference for:
+- [AD Toolkit](../scripts/powershell/ad-toolkit/) - Menu-driven Active Directory toolkit for Service Desk tasks
+- [Windows Cleanup](../scripts/powershell/windows-cleanup/) - Automated version of the cleanup procedure
+- [Service Manager](../scripts/powershell/service-manager/) - Manage a Windows service across many computers
 
-- Windows Server administration
-- Active Directory
-- Networking
-- PowerShell
-- Security
-- Troubleshooting
-- Automation
+## Planned
 
-## Notes
+Topics to be written:
 
-The content is organized into separate documents to keep the repository easy to navigate and maintain. New troubleshooting guides, scripts, commands, and operational notes can be added over time without making the README difficult to read.
+- Services and processes
+- Event logs
+- Active Directory and Group Policy
+- DNS and DHCP
+- Windows Firewall
+- Windows Update troubleshooting
+- Workstation, server, and domain controller troubleshooting
+
+Links are added here only once the note exists.

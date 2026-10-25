@@ -307,6 +307,12 @@ foreach ($DhcpServer in $DhcpServers) {
             )
         }
         catch {
+            # Record the failure so a scope that could not be read is not
+            # mistaken for "no matching lease".
+            $null = $DhcpErrors.Add([PSCustomObject]@{
+                Server = "$ServerName (scope $($Scope.ScopeId))"
+                Error  = $_.Exception.Message
+            })
             continue
         }
 
@@ -424,7 +430,7 @@ Write-Host ""
 
 Write-Host ("{0,-28}: {1}" -f "Forward DNS addresses", $DnsAddresses.Count)
 Write-Host ("{0,-28}: {1}" -f "Matching DHCP leases", $LeaseResults.Count)
-Write-Host ("{0,-28}: {1}" -f "DHCP servers with errors", $DhcpErrors.Count)
+Write-Host ("{0,-28}: {1}" -f "DHCP query errors", $DhcpErrors.Count)
 
 if ($Problems.Count -eq 0) {
     Write-Host ("{0,-28}: {1}" -f "Overall status", "Healthy") -ForegroundColor Green
