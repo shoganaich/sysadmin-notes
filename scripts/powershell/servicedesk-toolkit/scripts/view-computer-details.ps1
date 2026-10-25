@@ -94,6 +94,11 @@ catch {
 }
 
 # Retrieve group memberships.
+# Get-ADPrincipalGroupMembership fails in some domains with "An unspecified
+# error has occurred" (for example when a group name contains a slash, or a
+# membership comes from another domain). Fall back to the memberOf attribute.
+$GroupSourceNote = $null
+
 try {
     $Groups = @(
         Get-ADPrincipalGroupMembership `
@@ -103,14 +108,36 @@ try {
     )
 }
 catch {
-    Write-Host ""
-    Write-Host "Failed to retrieve computer group memberships." `
-        -ForegroundColor Red
+    $FirstError = $_.Exception.Message
 
-    Write-Host "Details: $($_.Exception.Message)" `
-        -ForegroundColor DarkRed
+    try {
+        $MemberOf = @(
+            (Get-ADObject -Identity $Computer.DistinguishedName -Properties memberOf -ErrorAction Stop).memberOf
+        )
 
-    $Groups = @()
+        $Groups = @(
+            $MemberOf |
+                ForEach-Object {
+                    # AD cmdlets throw a terminating error for missing objects,
+                    # so skip unreadable entries with try/catch.
+                    try { Get-ADGroup -Identity $_ -ErrorAction Stop } catch { $null }
+                } |
+                Where-Object { $_ } |
+                Sort-Object Name
+        )
+
+        $GroupSourceNote = "Read from the memberOf attribute. The primary group (usually Domain Users/Computers) is not listed."
+    }
+    catch {
+        Write-Host ""
+        Write-Host "Failed to retrieve computer group memberships." `
+            -ForegroundColor Red
+
+        Write-Host "Details: $FirstError" `
+            -ForegroundColor DarkRed
+
+        $Groups = @()
+    }
 }
 
 # Resolve the Managed By value.
@@ -353,6 +380,10 @@ Write-Host "=======" -ForegroundColor Cyan
 Write-Host ""
 
 Write-Host "Direct group memberships: $($Groups.Count)"
+
+if ($GroupSourceNote) {
+    Write-Host $GroupSourceNote -ForegroundColor DarkGray
+}
 
 Write-Host ""
 Write-Host "Distinguished name:" -ForegroundColor DarkGray

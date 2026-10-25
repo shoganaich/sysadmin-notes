@@ -150,7 +150,9 @@ try {
     }
     else {
         $Output = Invoke-Command -ComputerName $Target -ErrorAction Stop -ScriptBlock {
-            gpupdate.exe /target:computer /force 2>&1
+            # Answer "N" to any "restart/log off now?" prompt, so the
+            # remote session can't hang waiting for input.
+            "N" | gpupdate.exe /target:computer /force 2>&1
         }
 
         Write-Host ""

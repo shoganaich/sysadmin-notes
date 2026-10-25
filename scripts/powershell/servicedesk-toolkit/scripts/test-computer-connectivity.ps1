@@ -11,6 +11,7 @@
     - Active Directory computer lookup
     - DNS resolution
     - ICMP ping
+    - RPC Endpoint Mapper on TCP port 135
     - SMB connectivity on TCP port 445
     - RDP connectivity on TCP port 3389
     - WinRM HTTP connectivity on TCP port 5985
@@ -294,6 +295,10 @@ finally {
 
 # Define the TCP services to test.
 $PortTests = @(
+    [PSCustomObject]@{
+        Name = "RPC"
+        Port = 135
+    },
     [PSCustomObject]@{
         Name = "SMB"
         Port = 445

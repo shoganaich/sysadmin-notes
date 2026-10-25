@@ -124,7 +124,7 @@ try {
 }
 catch {
     Write-Host ""
-    Write-Host "User '$Username' was not found in Active Directory." -ForegroundColor Red
+    Write-Host "User '$Username' was not found, or the PDC emulator ($PDC) could not be reached." -ForegroundColor Red
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
     exit 1
 }

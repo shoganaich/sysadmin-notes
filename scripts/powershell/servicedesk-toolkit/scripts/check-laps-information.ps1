@@ -215,7 +215,9 @@ Write-Host ""
 Write-Host "LAPS Information" -ForegroundColor Cyan
 Write-Host "================"
 Write-Host ""
-Write-Host ("{0,-24}: {1}" -f "LAPS implementation", "Windows LAPS")
+$LapsImplementation = if ($StorageSource -like "Legacy*") { "Legacy Microsoft LAPS" } else { "Windows LAPS" }
+
+Write-Host ("{0,-24}: {1}" -f "LAPS implementation", $LapsImplementation)
 Write-Host ("{0,-24}: {1}" -f "Managed account", $ManagedAccount)
 Write-Host ("{0,-24}: {1}" -f "Password updated", $PasswordUpdated)
 Write-Host ("{0,-24}: {1}" -f "Password expiration", $PasswordExpiration)
