@@ -1,17 +1,4 @@
-<p align="center">
-  <picture>
-    <!-- Dark theme: dark banner, white text -->
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://capsule-render.vercel.app/api?type=venom&color=0:111827,100:374151&height=180&section=header&text=sysadmin-notes&fontSize=45&fontColor=ffffff"
-    />
-    <!-- Light theme (default): light banner, dark text -->
-    <img
-      src="https://capsule-render.vercel.app/api?type=venom&color=0:e5e7eb,100:9ca3af&height=180&section=header&text=sysadmin-notes&fontSize=45&fontColor=111827"
-      alt="sysadmin-notes"
-    />
-  </picture>
-</p>
+# sysadmin-notes
 
 [![License](https://img.shields.io/badge/License-CC%20BY%204.0-181717.svg)](https://creativecommons.org/licenses/by/4.0/)
 ![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)
