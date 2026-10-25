@@ -1,997 +1,270 @@
-# Roadmap System Administration
+# Roadmap: Service Desk to System Administrator
 
-## Goal
+My plan for moving from IT Service Desk into System Administration.
 
-Build the skill set needed to move from Service Desk into System Administration.
+Each phase has a goal, a checklist, and links to work in this repository that shows it in practice. Items are ticked when there is evidence for them in the repo or when I can do them confidently without notes.
 
----
-
-## Phase 1: Networking Fundamentals
-
-**Goal:** Understand how devices communicate.
-
-### Learn
-
-- IPv4
-- Subnetting
-- DNS
-- DHCP
-- NAT
-- Routing
-- VLANs
-- TCP vs UDP
-
-### Be able to answer
-
-- What happens when I open google.com?
-- What is DNS?
-- What is DHCP?
-- Why can one device reach the internet and another cannot?
-
-### Practice
-
-#### Linux
-
-```bash
-ip addr
-ping
-traceroute
-dig
-nslookup
-curl
-```
-
-#### Windows
-
-```cmd
-ipconfig
-ping
-tracert
-nslookup
-```
-
-### Result
-
-You can troubleshoot basic network problems without guessing.
+To study a topic, use the [study prompt](study-prompt.md).
 
 ---
 
-## Phase 2: Windows Fundamentals
+## Status
 
-**Goal:** Understand how Windows works internally.
+| # | Phase | Status | Evidence in this repo |
+|---|---|---|---|
+| 1 | [Networking fundamentals](#1-networking-fundamentals) | 🟡 In progress | [Port cheatsheet](windows/network-port-cheatsheet.md) |
+| 2 | [Windows fundamentals](#2-windows-fundamentals) | 🟡 In progress | [Procedures](windows/procedures/), [Windows Cleanup](scripts/powershell/windows-cleanup/), [Common commands](windows/common-commands.md) |
+| 3 | [Active Directory](#3-active-directory) | 🟡 In progress | [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/) |
+| 4 | [DNS and DHCP](#4-dns-and-dhcp) | 🟡 In progress | [DNS/DHCP check](scripts/powershell/servicedesk-toolkit/scripts/check-dns-dhcp.ps1) |
+| 5 | [PowerShell](#5-powershell) | 🟡 In progress | [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/), [Service Manager](scripts/powershell/service-manager/) |
+| 6 | [Git](#6-git) | ✅ Done | This repository |
+| 7 | [Entra ID, Intune, and Microsoft 365](#7-entra-id-intune-and-microsoft-365) | ⏭️ Next | |
+| 8 | [Linux administration](#8-linux-administration) | 🟡 Started | [Git config scripts](scripts/bash/git-config-scripts/) |
+| 9 | [Backups and recovery](#9-backups-and-recovery) | ⬜ Not started | |
+| 10 | [Monitoring](#10-monitoring) | ⬜ Not started | |
+| 11 | [Docker](#11-docker) | 🟡 Started | |
+| 12 | [Azure](#12-azure) | ⬜ Not started | |
+| 13 | [Automation: Ansible, Terraform, CI/CD](#13-automation-ansible-terraform-cicd) | ⬜ Not started | |
 
-### Learn
+**Currently working on:** finishing phases 1-5, then Entra ID and Intune.
 
-- Services
-- Event Viewer
-- Windows Updates
-- Scheduled Tasks
-- Registry
-- Local Users and Groups
-
-### Practice
-
-#### PowerShell
-
-```powershell
-Get-Service
-Get-Process
-Get-WinEvent
-Get-ComputerInfo
-```
-
-### Result
-
-You understand how Windows works beyond the GUI.
+**Certifications planned:** MD-102 (Endpoint Administrator) → AZ-900 → AZ-104.
 
 ---
 
-## Phase 3: Active Directory
+## Stage 1: Foundations
 
-**Goal:** Learn the bread and butter of Windows administration.
+The core of Service Desk and junior sysadmin work. Most tickets come down to one of these.
 
-### Learn
+### 1. Networking fundamentals
 
-#### Users
+**Goal:** troubleshoot network problems without guessing.
 
-- Create users
-- Disable users
-- Unlock users
-- Reset passwords
+- [ ] IPv4 addressing and private vs public ranges
+- [ ] Subnetting (work out network, broadcast, and host range by hand)
+- [ ] Routing and default gateways
+- [ ] NAT
+- [ ] VLANs
+- [x] TCP vs UDP, and why UDP can't be tested with a port test
+- [x] Common ports and what uses them
+- [ ] Explain what happens when you open `google.com`, step by step
+- [ ] Explain why one device reaches the internet and another doesn't
 
-#### Groups
+**Practice:** `ip addr`, `ping`, `traceroute`/`tracert`, `dig`/`nslookup`, `curl`, `Test-NetConnection`
 
-- Security groups
-- Permissions
+**Evidence:** [Network Port Cheatsheet](windows/network-port-cheatsheet.md), [network section of Common Commands](windows/common-commands.md#5-no-network-or-cant-reach-a-share)
 
-#### Organizational Units (OUs)
+### 2. Windows fundamentals
 
-- Structure
-- Delegation
+**Goal:** understand Windows beyond the GUI.
 
-#### Authentication
+- [x] Services: start types, dependencies, remote management
+- [ ] Event Viewer and reading event logs with `Get-WinEvent`
+- [x] Windows Update: cache, servicing, pending restarts
+- [ ] Scheduled Tasks
+- [ ] Registry basics (HKLM vs HKCU, where settings live)
+- [ ] Local users and groups
+- [x] Boot process and recovery (WinRE, BCDBoot, offline DISM and SFC)
+- [ ] BitLocker and recovery keys
+- [ ] Microsoft Defender basics
 
-- Kerberos
-- LDAP basics
+**Evidence:** [UEFI boot recovery](windows/procedures/winre-uefi-recovery.md), [advanced recovery](windows/procedures/winre-uefi-advanced-troubleshooting.md), [cleanup procedure](windows/procedures/windows-cleanup.md) and [script](scripts/powershell/windows-cleanup/), [Service Manager](scripts/powershell/service-manager/)
 
-### Learn to answer
+### 3. Active Directory
 
-- Why can't a user log in?
-- Why isn't a permission applying?
-- Why is a user locked out?
+**Goal:** handle everyday AD work and know why things fail.
 
-### Result
+- [x] Unlock accounts
+- [x] Reset passwords
+- [x] Investigate account lockouts and find the source device
+- [x] Check group memberships and group owners
+- [x] Read LAPS passwords
+- [ ] Create and disable users
+- [ ] Security groups vs distribution groups, group scopes
+- [ ] Organizational Units and delegation of control
+- [ ] Group Policy: linking, inheritance, filtering, `gpresult`
+- [ ] Kerberos basics: tickets, time sync, why `klist purge` works
+- [ ] LDAP basics
+- [ ] FSMO roles and what the PDC emulator does
+- [ ] Explain why a user can't sign in, or why a permission isn't applying
 
-Performing actual sysadmin tasks.
+**Evidence:** [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/): lockout source, unlock, reset, group approver, LAPS
 
----
+### 4. DNS and DHCP
 
-## Phase 4: DNS & DHCP
+**Goal:** stop blaming random things for DNS problems.
 
-**Goal:** Master the two most common causes of weird issues.
+- [x] A and PTR records, forward and reverse lookups
+- [ ] CNAME records
+- [ ] Forwarders and conditional forwarders
+- [ ] Dynamic DNS registration and scavenging
+- [ ] DHCP scopes, options, and reservations
+- [x] DHCP leases
+- [ ] Troubleshoot a DNS problem from client to server
 
-### DNS
+**Practice:** `Resolve-DnsName`, `nslookup`, `ipconfig /flushdns`, `ipconfig /registerdns`, `dig`, `resolvectl status`
 
-Learn:
+**Evidence:** [DNS and DHCP check](scripts/powershell/servicedesk-toolkit/scripts/check-dns-dhcp.ps1) (cross-checks A records, PTR records, and DHCP leases)
 
-- A records
-- CNAME
-- PTR
-- Forwarders
+### 5. PowerShell
 
-### DHCP
+**Goal:** automate tasks instead of doing them by hand.
 
-Learn:
+- [x] `if`, `foreach`, `switch`, functions, arrays
+- [x] Error handling with `try`/`catch`
+- [x] Working with AD, CIM, and remote computers
+- [x] Build a service monitor/manager
+- [x] Build a disk and health report
+- [ ] Build a user report exported to CSV
+- [ ] Write a module (`.psm1`) and reuse code across scripts
+- [ ] Write Pester tests
+- [ ] Run PSScriptAnalyzer and fix its findings
 
-- Scopes
-- Reservations
-- Leases
+**Evidence:** [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/), [Service Manager](scripts/powershell/service-manager/), [Windows Cleanup](scripts/powershell/windows-cleanup/)
 
-### Practice
+### 6. Git
 
-#### Windows
+**Goal:** track changes and keep notes and scripts versioned.
 
-```cmd
-nslookup
-ipconfig /flushdns
-ipconfig /renew
-```
+- [x] Clone, add, commit, push, pull
+- [x] SSH authentication and signed commits
+- [x] Multiple remotes
+- [x] Conventional commit messages
+- [x] Rename and move files without losing history (`git mv`)
+- [ ] Branches and pull requests
+- [ ] Undo mistakes safely: `restore`, `revert`, `reset`, `rebase -i`
 
-#### Linux
-
-```bash
-dig
-host
-resolvectl status
-```
-
-### Result
-
-You stop blaming random things for DNS problems.
-
----
-
-## Phase 5: PowerShell
-
-**Goal:** Automating tasks instead of manually doing things.
-
-### Learn
-
-#### Basics
-
-```powershell
-if
-foreach
-switch
-functions
-arrays
-```
-
-#### Commands
-
-```powershell
-Get-Service
-Get-Process
-Get-ChildItem
-Get-Content
-Export-Csv
-```
-
-### Projects
-
-- User report
-- Disk report
-- Service monitor
-- Event log report
-
-### Result
-
-You become more efficient than people doing everything manually.
+**Evidence:** this repository and the [Git config scripts](scripts/bash/git-config-scripts/)
 
 ---
 
-## Phase 6: Linux Administration
+## Stage 2: Modern identity and endpoints
 
-**Goal:** Formalize what I already know.
+Most organizations now run hybrid: on-premises AD synced to Entra ID, with devices managed by Intune. This builds directly on Service Desk work.
 
-### Learn
+### 7. Entra ID, Intune, and Microsoft 365
 
-#### Users
+**Goal:** manage cloud identities and devices as confidently as on-premises AD.
 
-```bash
-useradd
-usermod
-passwd
-groups
-```
+**Entra ID**
 
-#### Services
+- [ ] Users, groups, and roles
+- [ ] Hybrid identity: how on-premises AD syncs to Entra ID
+- [ ] MFA and self-service password reset
+- [ ] Conditional Access basics: why a sign-in was blocked
+- [ ] Reading sign-in logs
 
-```bash
-systemctl
-journalctl
-```
+**Intune**
 
-#### Storage
+- [ ] Device enrollment and Autopilot
+- [ ] Compliance policies and configuration profiles
+- [ ] App deployment
+- [ ] Windows Update rings
+- [ ] Troubleshoot a device that isn't receiving policies
 
-```bash
-lsblk
-mount
-df -h
-```
+**Microsoft 365**
 
-#### Permissions
+- [ ] Admin center basics: licenses, users, service health
+- [ ] Exchange Online: mailboxes, shared mailboxes, permissions
 
-```bash
-chmod
-chown
-```
-
-#### Networking
-
-```bash
-ss -tulpn
-ip addr
-ip route
-```
-
-### Result
-
-Confidently administer Linux systems.
+**Certification:** MD-102 (Microsoft 365 Certified: Endpoint Administrator Associate)
 
 ---
 
-## Phase 7: Backups
+## Stage 3: Running services
 
-**Goal:** Learn the skill everyone ignores until disaster strikes.
+### 8. Linux administration
 
-### Learn
+**Goal:** formalize what I already use at home.
 
-- Backup strategies
-- Retention policies
-- Restore procedures
+- [ ] Users and groups: `useradd`, `usermod`, `passwd`, `groups`
+- [ ] Services and logs: `systemctl`, `journalctl`
+- [ ] Storage: `lsblk`, `mount`, `df -h`, `/etc/fstab`
+- [ ] Permissions: `chmod`, `chown`, `umask`
+- [ ] Networking: `ip addr`, `ip route`, `ss -tulpn`
+- [ ] Package management (`apt`/`dnf`) and updates
+- [ ] SSH: keys, config, hardening
+- [x] Bash scripting with `set -euo pipefail`
 
-### Practice
+**Evidence:** [Git config scripts](scripts/bash/git-config-scripts/)
 
-1. Backup something.
-2. Delete it.
-3. Restore it.
+### 9. Backups and recovery
 
-### Rule
+**Goal:** learn the skill everyone ignores until disaster strikes.
 
 > A backup doesn't exist until you've tested a restore.
 
-### Result
+- [ ] Backup strategies and the 3-2-1 rule
+- [ ] Retention policies
+- [ ] Back up something, delete the original, restore it
+- [ ] Document the restore test as a case study
 
-Understand real-world disaster recovery.
+### 10. Monitoring
 
----
+**Goal:** know when systems are sick before users do.
 
-## Phase 8: Monitoring
+- [ ] CPU, memory, disk, and network metrics
+- [ ] Uptime checks with Uptime Kuma
+- [ ] Metrics with Prometheus and dashboards with Grafana
+- [ ] Configure an alert that fires before a user reports the problem
 
-**Goal:** Know when systems are sick before users do.
+### 11. Docker
 
-### Learn
+**Goal:** understand and run containerized services.
 
-- CPU usage
-- Memory usage
-- Disk usage
-- Network traffic
-
-### Tools
-
-- Grafana
-- Uptime Kuma
-- Prometheus
-
-### Result
-
-Learn how to observe systems properly.
+- [ ] Images, containers, volumes, networks
+- [ ] Docker Compose
+- [ ] Deploy Nginx, Grafana, and Uptime Kuma with Compose
+- [ ] Store the Compose files in this repository (`docker/`)
 
 ---
 
-## Phase 9: Azure
+## Stage 4: Cloud and automation
 
-**Goal:** Become relevant in modern infrastructure.
+### 12. Azure
 
-### Start With
+**Goal:** stop being only an on-premises administrator.
 
-#### AZ-900
+- [ ] Cloud basics, core services, pricing (AZ-900)
+- [ ] Virtual machines, storage, networking
+- [ ] RBAC and Entra ID integration
+- [ ] Azure Backup
+- [ ] AZ-104 (Azure Administrator)
 
-Learn:
+### 13. Automation: Ansible, Terraform, CI/CD
 
-- Cloud basics
-- Azure services
-- Pricing
-- Security concepts
+**Goal:** manage many systems at once and treat infrastructure as code.
 
-### Continue With
-
-#### AZ-104
-
-Learn:
-
-- VMs
-- Storage
-- Networking
-- Entra ID
-- RBAC
-- Backups
-
-### Result
-
-You're no longer only an on-prem administrator.
+- [ ] Ansible: inventory, playbooks, variables
+- [ ] Ansible: install a package, restart a service, change a config on several servers
+- [ ] Terraform: providers, resources, variables, state
+- [ ] Terraform: create a small Azure environment
+- [ ] GitHub Actions: run PSScriptAnalyzer on every push to this repository
+- [ ] GitHub Actions: run Pester tests for the Service Desk Toolkit
 
 ---
 
-## Phase 10: Git
+## Habit: Document Every Solved Problem
 
-**Goal:** Track changes and manage configurations.
-
-### Learn
-
-```bash
-git clone
-git add
-git commit
-git push
-git pull
-```
-
-### Create
+Every time I solve something worth remembering, I write it up as a short case study (planned `case-studies/` folder), sanitized of names, IPs, and anything confidential:
 
 ```text
-github.com/yourname/sysadmin-notes
+# Short title of the problem
+
+## Symptom
+What the user saw or reported.
+
+## Investigation
+What I checked, the commands I ran, and what they showed.
+
+## Root cause
+What was actually wrong.
+
+## Fix
+What solved it.
+
+## Lesson
+What I'd check first next time.
 ```
 
-Store:
-
-- Scripts
-- Notes
-- Troubleshooting guides
-- Docker files
-
-### Result
-
-Building a portfolio/Wiki/Materials
-
----
-
-## Phase 11: Ansible
-
-**Goal:** Manage many systems at once.
-
-### Learn
-
-- Inventory
-- Playbooks
-- Variables
-
-#### Example
-
-```text
-Install package on 20 servers
-Restart service on 20 servers
-Update configuration on 20 servers
-```
-
-### Result
-
-You start thinking at scale.
-
----
-
-## Phase 12: Docker
-
-**Goal:** Understand containerized services.
-
-### Learn
-
-- Images
-- Containers
-- Volumes
-- Networks
-- Compose
-
-### Practice
-
-Deploy:
-
-- Nginx
-- Grafana
-- Uptime Kuma
-
-### Result
-
-You understand containerized services.
-
----
-
-## Phase 13: Terraform
-
-**Goal:** Infrastructure as Code.
-
-### Learn
-
-- Providers
-- Variables
-- Resources
-- State
-
-### Result
-
-You can create infrastructure using code.
-
----
-
-## Phase 14: CI/CD
-
-**Goal:** Automate deployments.
-
-### Learn
-
-- GitHub Actions
-- Azure DevOps
-
-### Result
-
-Approach DevOps territory.
-
----
-
-## Daily Habit
-
-Every time you solve a problem:
-
-1. Document it.
-2. Save commands used.
-3. Save logs analyzed.
-4. Write the solution.
-
-Create:
-
-```text
-~/sysadmin-notes
-```
-
-or
-
-```text
-github.com/<yourname>/sysadmin-notes
-```
-
-> After a year you'll have your own knowledge base.
-
----
-
-## Priority Order
-
-1. Networking Fundamentals
-2. Windows Fundamentals
-3. Active Directory
-4. DNS & DHCP
-5. PowerShell
-6. Linux Administration
-7. Backups
-8. Monitoring
-9. Azure (AZ-900 → AZ-104)
-10. Git
-11. Ansible
-12. Docker
-13. Terraform
-14. CI/CD
-
----
-
-## Roadmap Checklist
-
-### Phase 1: Networking Fundamentals
-
-- [ ] Learn IPv4
-- [ ] Practice subnetting
-- [ ] Understand DNS
-- [ ] Understand DHCP
-- [ ] Understand NAT
-- [ ] Learn routing basics
-- [ ] Learn VLAN basics
-- [ ] Understand TCP vs UDP
-- [ ] Practice Linux networking commands
-- [ ] Practice Windows networking commands
-- [ ] Troubleshoot a basic network problem without guessing
-
-### Phase 2: Windows Fundamentals
-
-- [ ] Learn how Windows services work
-- [ ] Use Event Viewer
-- [ ] Understand Windows Updates
-- [ ] Work with Scheduled Tasks
-- [ ] Learn Registry basics
-- [ ] Manage local users and groups
-- [ ] Practice the listed PowerShell commands
-- [ ] Troubleshoot Windows beyond the GUI
-
-### Phase 3: Active Directory
-
-- [ ] Create, disable, unlock, and update users
-- [ ] Reset user passwords
-- [ ] Understand security groups
-- [ ] Manage permissions
-- [ ] Understand Organizational Units
-- [ ] Learn delegation basics
-- [ ] Understand Kerberos basics
-- [ ] Understand LDAP basics
-- [ ] Troubleshoot login problems
-- [ ] Troubleshoot permission problems
-- [ ] Investigate account lockouts
-
-### Phase 4: DNS & DHCP
-
-- [ ] Understand A records
-- [ ] Understand CNAME records
-- [ ] Understand PTR records
-- [ ] Learn how forwarders work
-- [ ] Understand DHCP scopes
-- [ ] Configure reservations
-- [ ] Understand leases
-- [ ] Practice Windows DNS and DHCP commands
-- [ ] Practice Linux DNS commands
-- [ ] Troubleshoot a DNS problem correctly
-
-### Phase 5: PowerShell
-
-- [ ] Learn `if` statements
-- [ ] Learn `foreach` loops
-- [ ] Learn `switch` statements
-- [ ] Learn functions
-- [ ] Learn arrays
-- [ ] Practice the listed PowerShell commands
-- [ ] Create a user report
-- [ ] Create a disk report
-- [ ] Create a service monitor
-- [ ] Create an event log report
-
-### Phase 6: Linux Administration
-
-- [ ] Manage Linux users
-- [ ] Manage Linux groups
-- [ ] Manage services with `systemctl`
-- [ ] Review logs with `journalctl`
-- [ ] Inspect and mount storage
-- [ ] Check disk usage
-- [ ] Manage file permissions
-- [ ] Manage file ownership
-- [ ] Inspect listening services and ports
-- [ ] Review IP addresses and routes
-- [ ] Confidently administer a Linux system
-
-### Phase 7: Backups
-
-- [ ] Learn backup strategies
-- [ ] Understand retention policies
-- [ ] Learn restore procedures
-- [ ] Back up something
-- [ ] Delete the original
-- [ ] Restore it successfully
-- [ ] Document the restore test
-
-### Phase 8: Monitoring
-
-- [ ] Monitor CPU usage
-- [ ] Monitor memory usage
-- [ ] Monitor disk usage
-- [ ] Monitor network traffic
-- [ ] Try Grafana
-- [ ] Try Uptime Kuma
-- [ ] Try Prometheus
-- [ ] Configure an alert before a user reports the issue
-
-### Phase 9: Azure
-
-- [ ] Learn cloud basics
-- [ ] Learn core Azure services
-- [ ] Understand Azure pricing
-- [ ] Learn cloud security concepts
-- [ ] Prepare for AZ-900
-- [ ] Learn Azure virtual machines
-- [ ] Learn Azure Storage
-- [ ] Learn Azure networking
-- [ ] Learn Entra ID
-- [ ] Learn RBAC
-- [ ] Learn Azure Backup
-- [ ] Prepare for AZ-104
-
-### Phase 10: Git
-
-- [ ] Clone a repository
-- [ ] Stage changes
-- [ ] Commit changes
-- [ ] Push changes
-- [ ] Pull changes
-- [ ] Create a `sysadmin-notes` repository
-- [ ] Store scripts
-- [ ] Store notes
-- [ ] Store troubleshooting guides
-- [ ] Store Docker files
-
-### Phase 11: Ansible
-
-- [ ] Create an inventory
-- [ ] Write a playbook
-- [ ] Use variables
-- [ ] Install a package on multiple servers
-- [ ] Restart a service on multiple servers
-- [ ] Update a configuration on multiple servers
-
-### Phase 12: Docker
-
-- [ ] Understand images
-- [ ] Run and manage containers
-- [ ] Work with volumes
-- [ ] Work with container networks
-- [ ] Use Docker Compose
-- [ ] Deploy Nginx
-- [ ] Deploy Grafana
-- [ ] Deploy Uptime Kuma
-
-### Phase 13: Terraform
-
-- [ ] Understand providers
-- [ ] Use variables
-- [ ] Create resources
-- [ ] Understand state
-- [ ] Create infrastructure using code
-
-### Phase 14: CI/CD
-
-- [ ] Learn GitHub Actions
-- [ ] Learn Azure DevOps pipelines
-- [ ] Automate a deployment
-
-### Daily Habit
-
-- [ ] Document every solved problem
-- [ ] Save the commands used
-- [ ] Save the logs analyzed
-- [ ] Write down the final solution
-- [ ] Keep `sysadmin-notes` updated
-
-## AI Prompt to help study
-
-This prompt exists to turn any topic in the roadmap into a structured learning session. Instead of memorizing definitions, it helps you understand the concept from first principles, practice real troubleshooting, and build the habits needed to work confidently as a Service Desk technician or junior System Administrator.
-
-```text
-Act as a senior System Administrator, Network Engineer, teacher, mentor, and technical trainer.
-
-My goal is to learn [TOPIC] from beginner level until I can:
-
-- Understand it deeply
-- Troubleshoot it confidently
-- Explain it to another person
-- Apply it in real-world Service Desk and System Administration scenarios
-- Use the knowledge in interviews and practical work
-
-Context:
-
-I currently work in IT Service Desk and I am following a roadmap to become a System Administrator.
-
-I do not want to memorize definitions.
-
-I want to understand how things work from first principles so I can build solid foundations in networking, systems administration, Active Directory, Azure, PowerShell, Linux, and cloud technologies.
-
-Use industry best practices and CCNA-level depth when appropriate.
-
-## Scope & Learning Boundary
-
-This lesson is part of a larger System Administration learning roadmap.
-
-Focus ONLY on the requested topic.
-
-Do not expand into future topics from the roadmap unless they are absolutely required to understand the current topic.
-
-When a related topic is necessary:
-
-- Mention it briefly.
-- Explain it in one or two sentences only.
-- Explain why it matters.
-- State that it will be covered in a future lesson.
-- Do not deep dive into it.
-
-The goal is mastery of ONE topic at a time.
-
-Depth is preferred over breadth.
-
-Finish the current topic completely before introducing future roadmap topics.
-
-Examples:
-
-If the topic is IPv4:
-
-✅ Explain IPv4 addresses
-✅ Explain address structure
-✅ Explain public vs private addresses
-✅ Explain how devices identify each other
-✅ Explain how communication works at a high level
-
-❌ Do not teach subnetting in detail
-❌ Do not teach DNS in detail
-❌ Do not teach DHCP in detail
-❌ Do not teach routing in detail
-❌ Do not teach NAT in detail
-❌ Do not teach IPv6 in detail
-
-If the topic is DNS:
-
-✅ Explain DNS records
-✅ Explain hostname resolution
-✅ Explain how DNS queries work
-
-❌ Do not teach Active Directory in detail
-❌ Do not teach routing in detail
-❌ Do not teach DHCP in detail
-
-If the topic is DHCP:
-
-✅ Explain scopes
-✅ Explain leases
-✅ Explain reservations
-
-❌ Do not deep dive into DNS
-❌ Do not deep dive into subnetting
-❌ Do not deep dive into routing
-
-Teaching Style:
-
-1. Start by explaining the topic as if I am 8 years old.
-2. Assume I know absolutely nothing.
-3. Avoid unnecessary jargon at the beginning.
-4. Introduce technical terms gradually.
-5. Every time you introduce a technical term:
-   - Define it in simple language.
-   - Explain why it exists.
-   - Explain why I should care about it.
-6. Use real-world analogies.
-7. Use practical examples.
-8. Build complexity step by step.
-9. Never skip steps.
-10. Focus on understanding, not memorization.
-11. If something is complicated, explain it three ways:
-    - Like I'm 8 years old
-    - Like I'm a Service Desk technician
-    - Like I'm training to become a System Administrator
-12. Whenever possible, explain what is happening behind the scenes.
-13. Highlight common beginner mistakes and misconceptions.
-14. Use plain English.
-15. If a concept is difficult, slow down and explain it with additional examples until it becomes intuitive.
-
-Learning Structure:
-
-## Part 1: Simple Explanation
-
-Explain the topic as if I am 8 years old.
-
-Use simple analogies and avoid technical language.
-
-## Part 2: Why It Exists
-
-Explain:
-
-- What problem it solves
-- Why it was created
-- What would happen if it didn't exist
-
-## Part 3: Core Concepts
-
-Explain only the concepts that are fundamental to the requested topic.
-
-Define every term clearly.
-
-Show relationships only when necessary for understanding the current topic.
-
-Do not include detailed explanations of concepts that belong to future topics.
-
-## Part 4: How It Works Internally
-
-Walk through the process step by step.
-
-Do not skip technical details.
-
-Explain what happens behind the scenes.
-
-## Part 5: Real-World Examples
-
-Provide realistic examples from:
-
-- Home networks
-- Enterprise networks
-- Service Desk incidents
-- System Administration
-
-## Part 6: Diagrams
-
-Use ASCII diagrams whenever useful.
-
-Example:
-
-PC
-|
-Switch
-|
-Router
-|
-Internet
-
-Create diagrams that help me visualize how things work.
-
-## Part 7: Troubleshooting
-
-Show:
-
-- Common issues
-- Symptoms
-- Root causes
-- Troubleshooting process
-- How a SysAdmin would think
-
-Focus on logical troubleshooting rather than guessing.
-
-## Part 8: Commands
-
-Provide useful commands relevant to the requested topic.
-
-For Windows:
-
-- ipconfig
-- ping
-- tracert
-- nslookup
-- PowerShell commands if applicable
-
-For Linux:
-
-- ip addr
-- ping
-- traceroute
-- dig
-- ss
-- Other relevant commands
-
-For each command explain:
-
-- What it does
-- Why it is useful
-- Example output
-- How to interpret it
-
-Only include commands directly relevant to the topic.
-
-## Part 9: Hands-On Lab
-
-Create a practical lab I can perform on:
-
-- Windows
-- Linux
-- A home lab
-- A virtual machine
-
-Include:
-
-- Objectives
-- Steps
-- Expected results
-- Troubleshooting tips
-
-## Part 10: Knowledge Check
-
-Create:
-
-- 10 beginner questions
-- 10 intermediate questions
-
-Do not reveal the answers immediately.
-
-## Part 11: Quiz Answers
-
-Provide detailed answers and explanations.
-
-## Part 12: Can You Teach It?
-
-Ask questions that test whether I can explain the topic to someone else.
-
-Examples:
-
-- How would you explain this to a non-technical friend?
-- What problem does this solve?
-- Why does it matter?
-- What happens if it breaks?
-
-## Part 13: Interview Preparation
-
-Create:
-
-- Common interview questions
-- Strong sample answers
-- Questions a Junior SysAdmin should be able to answer
-
-## Part 14: SysAdmin Notes
-
-Create concise notes using this format:
-
-# Topic
-
-## Definition
-
-## Key Concepts
-
-## How It Works
-
-## Important Commands
-
-## Troubleshooting
-
-## Key Takeaways
-
-The notes should be concise enough to save in my sysadmin-notes repository.
-
-## Part 15: Mastery Checklist
-
-Provide a checklist:
-
-[ ] I understand the basic concepts
-
-[ ] I can explain it to another person
-
-[ ] I can troubleshoot common issues
-
-[ ] I can identify it in real environments
-
-[ ] I can answer interview questions
-
-[ ] I can use the relevant commands
-
-[ ] I am ready to move to the next topic
-
-## Part 16: What Comes Next
-
-List only the next related topics that should be learned after mastering this one.
-
-For each topic:
-
-- Give a one-sentence description.
-- Explain why it should be learned next.
-
-Do not teach these topics.
-
-Final Rule:
-
-Do not optimize for speed.
-
-Optimize for deep understanding.
-
-Teach only the requested topic.
-
-Do not expand into future topics unless absolutely required for understanding.
-
-Mention related topics briefly and defer them to the "What Comes Next" section.
-
-Topic: [TOPIC]
-```
+> After a year, this repository becomes my own knowledge base and proof of what I can do.

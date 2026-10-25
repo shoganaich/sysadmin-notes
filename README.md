@@ -22,7 +22,7 @@ I work in IT Service Desk and I'm building towards a System Administrator role. 
 
 Outside work I run Linux servers, Docker containers, and self-hosted services, which is where the Linux and homelab notes will come from.
 
-My learning plan is in [roadmap.md](roadmap.md).
+My learning plan, with progress and links to the work that shows it, is in [roadmap.md](roadmap.md). I study each topic with the [study prompt](study-prompt.md).
 
 ---
 
@@ -63,6 +63,7 @@ Step-by-step procedures written for real support work, with safety checks and es
 sysadmin-notes/
 ├── README.md
 ├── roadmap.md
+├── study-prompt.md
 ├── LICENSE
 ├── windows/
 │   ├── common-commands.md
