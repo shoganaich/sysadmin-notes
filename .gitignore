@@ -6,6 +6,7 @@ scripts/powershell/gps-locator/GPSLocator.html
 CleanupLog_*.txt
 CleanupReport_*.txt
 LargestFiles_*.csv
+temp.sh
 
 # OS and editor files
 .DS_Store
