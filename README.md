@@ -52,6 +52,7 @@ Step-by-step procedures written for real support work, with safety checks and es
 | [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/) | PowerShell + Batch | Menu-driven toolkit for Service Desk tickets: AD user and computer lookups, lockout source, unlocks and password resets, LAPS, PC health check, user messages, and remote Group Policy updates |
 | [Windows Cleanup](scripts/powershell/windows-cleanup/) | PowerShell | Automated version of the cleanup procedure, with a report of what was done and how much space was recovered |
 | [Service Manager](scripts/powershell/service-manager/) | PowerShell | Check, start, stop, or restart a service across many computers using number ranges like `070-085` |
+| [Shift Log](scripts/powershell/shift-log/) | PowerShell + Batch | Terminal editor for shift reports: planned work, timestamped entries, carry-over of open items to the next shift, and a report ready to copy into a handover |
 | [GPS Locator](scripts/powershell/gps-locator/) | PowerShell + Batch | Reads the latest NMEA fix from a remote computer's GPS log and opens it in Google Maps |
 | [Git Config Scripts](scripts/bash/git-config-scripts/) | Bash | Sets up Git identity, SSH authentication, SSH commit signing, and remotes on my Linux machines |
 
@@ -77,6 +78,7 @@ sysadmin-notes/
     │   ├── servicedesk-toolkit/
     │   ├── gps-locator/
     │   ├── service-manager/
+    │   ├── shift-log/
     │   └── windows-cleanup/
     └── bash/
         └── git-config-scripts/
