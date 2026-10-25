@@ -26,7 +26,8 @@ Related notes: [Network Port Cheatsheet](network-port-cheatsheet.md) for port te
 8. [Updates, installed software, and pending restarts](#8-updates-installed-software-and-pending-restarts)
 9. [Working on a remote computer](#9-working-on-a-remote-computer)
 10. [Event logs](#10-event-logs)
-11. [Commands to be careful with](#11-commands-to-be-careful-with)
+11. [Laptop screen brightness](#11-laptop-screen-brightness)
+12. [Commands to be careful with](#12-commands-to-be-careful-with)
 
 ---
 
@@ -350,7 +351,40 @@ Get-WinEvent -ComputerName PC01 -FilterHashtable @{ LogName = 'System'; Level = 
 
 ---
 
-## 11. Commands to be careful with
+## 11. Laptop screen brightness
+
+A surprisingly common request, usually because the brightness keys stopped working or the screen keeps dimming by itself.
+
+```powershell
+# Current brightness (0-100)
+(Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightness).CurrentBrightness
+
+# Set brightness to 70%. No admin rights needed
+Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightnessMethods | Invoke-CimMethod -MethodName WmiSetBrightness -Arguments @{Timeout=0; Brightness=70}
+
+# Shorter version, Windows PowerShell 5.1 only (the default powershell.exe)
+(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(0, 70)
+
+# Same on a remote laptop (WinRM must be reachable)
+Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightnessMethods -ComputerName PC01 | Invoke-CimMethod -MethodName WmiSetBrightness -Arguments @{Timeout=0; Brightness=70}
+
+start ms-settings:display            # Open Settings > System > Display for the user
+```
+
+**Limitations**
+
+- This only works on the **built-in laptop panel**. External monitors don't support it, and the commands return a "not supported" error on desktops. External monitors are adjusted with their own buttons or a vendor tool.
+- If the brightness keys don't work but the command does, the laptop is usually missing the manufacturer's hotkey or chipset driver. Reinstall it from the vendor's support site.
+
+**If the screen keeps changing brightness by itself**, check these settings with the user:
+
+- **Settings > System > Display > Brightness:** "Change brightness automatically when lighting changes" (light sensor) and "Change brightness based on content" (content adaptive brightness)
+- **Settings > System > Power & battery > Energy saver:** Energy saver (Battery saver on Windows 10) lowers screen brightness on battery
+- Intel, AMD, or NVIDIA graphics control panels can also have their own power-saving display features that dim the screen
+
+---
+
+## 12. Commands to be careful with
 
 | Command | Why |
 |---|---|
