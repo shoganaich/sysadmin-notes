@@ -21,13 +21,13 @@ gps-locator/
 
 This utility does not communicate directly with the GPS receiver.
 
-It depends on an external GPS application that writes NMEA data to a log file at:
+It depends on an external GPS application that writes NMEA data to a log file on each computer. Set that file's local path in the `$LogPath` line at the top of `gps-locator.ps1`:
 
-```text
-C:\Path\To\gps.log
+```powershell
+$LogPath = "C:\Path\To\gps.log"
 ```
 
-To use a different location, change the `$Log` line at the top of `gps-locator.ps1`.
+The path in the repository is a placeholder. The script turns it into an administrative share path, for example `\\HOSTNAME\C$\Path\To\gps.log`.
 
 The external GPS application is not included in this repository.
 
@@ -38,7 +38,7 @@ The external GPS application is not included in this repository.
 3. If the host is reachable, the PowerShell script accesses:
 
    ```text
-   \\HOSTNAME\c$\Path\To\gps.log
+   \\HOSTNAME\C$\Path\To\gps.log
    ```
 
 4. The script searches the last 10 log lines for `$GPRMC` or `$GNRMC` NMEA messages and uses the most recent one.
@@ -52,12 +52,7 @@ The external GPS application is not included in this repository.
 - Windows PowerShell
 - Network connectivity to the remote computer
 - Permission to access the remote `C$` administrative share
-- GPS log available at:
-
-  ```text
-  C:\Path\To\gps.log
-  ```
-
+- GPS log available at the path set in `$LogPath`
 - Valid `$GPRMC` or `$GNRMC` messages in the log
 - Internet access for Google Maps
 

@@ -3,8 +3,11 @@
     [string]$machine
 )
 
-# Caminho do log no computador remoto.
-$Log = "\\$machine\c$\Path\To\gps.log"
+# Caminho local do log NMEA no computador remoto. Alterar para o caminho real.
+$LogPath = "C:\Path\To\gps.log"
+
+# Converte para caminho de partilha administrativa (C:\... -> \\maquina\C$\...).
+$Log = "\\$machine\" + ($LogPath -replace '^([A-Za-z]):', '$1$')
 
 # Numero de linhas do fim do log a analisar.
 $TailLines = 10
