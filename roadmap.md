@@ -16,13 +16,13 @@ To study a topic, use the [study prompt](study-prompt.md).
 | 2 | [Windows fundamentals](#2-windows-fundamentals) | 🟡 In progress | [Procedures](windows/procedures/), [Windows Cleanup](scripts/powershell/windows-cleanup/), [Common commands](windows/common-commands.md) |
 | 3 | [Active Directory](#3-active-directory) | 🟡 In progress | [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/) |
 | 4 | [DNS and DHCP](#4-dns-and-dhcp) | 🟡 In progress | [DNS/DHCP check](scripts/powershell/servicedesk-toolkit/scripts/check-dns-dhcp.ps1) |
-| 5 | [PowerShell](#5-powershell) | 🟡 In progress | [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/), [Service Manager](scripts/powershell/service-manager/) |
-| 6 | [Git](#6-git) | ✅ Done | This repository |
+| 5 | [PowerShell](#5-powershell) | 🟡 In progress | [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/), [Service Manager](scripts/powershell/service-manager/), [Shift Log](scripts/powershell/shift-log/), [GPS Locator](scripts/powershell/gps-locator/) |
+| 6 | [Git](#6-git) | 🟡 In progress | This repository |
 | 7 | [Entra ID, Intune, and Microsoft 365](#7-entra-id-intune-and-microsoft-365) | ⏭️ Next | |
 | 8 | [Linux administration](#8-linux-administration) | 🟡 Started | [Git config scripts](scripts/bash/git-config-scripts/) |
 | 9 | [Backups and recovery](#9-backups-and-recovery) | ⬜ Not started | |
-| 10 | [Monitoring](#10-monitoring) | ⬜ Not started | |
-| 11 | [Docker](#11-docker) | 🟡 Started | |
+| 10 | [Docker](#10-docker) | ⬜ Not started | |
+| 11 | [Monitoring](#11-monitoring) | ⬜ Not started | |
 | 12 | [Azure](#12-azure) | ⬜ Not started | |
 | 13 | [Automation: Ansible, Terraform, CI/CD](#13-automation-ansible-terraform-cicd) | ⬜ Not started | |
 
@@ -120,7 +120,7 @@ The core of Service Desk and junior sysadmin work. Most tickets come down to one
 - [ ] Write Pester tests
 - [ ] Run PSScriptAnalyzer and fix its findings
 
-**Evidence:** [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/), [Service Manager](scripts/powershell/service-manager/), [Windows Cleanup](scripts/powershell/windows-cleanup/)
+**Evidence:** [Service Desk Toolkit](scripts/powershell/servicedesk-toolkit/), [Service Manager](scripts/powershell/service-manager/), [Windows Cleanup](scripts/powershell/windows-cleanup/), [Shift Log](scripts/powershell/shift-log/) (config file, search, archiving), [GPS Locator](scripts/powershell/gps-locator/) (parses NMEA data from a remote computer's log)
 
 ### 6. Git
 
@@ -128,7 +128,6 @@ The core of Service Desk and junior sysadmin work. Most tickets come down to one
 
 - [x] Clone, add, commit, push, pull
 - [x] SSH authentication and signed commits
-- [x] Multiple remotes
 - [x] Conventional commit messages
 - [x] Rename and move files without losing history (`git mv`)
 - [ ] Branches and pull requests
@@ -199,16 +198,7 @@ Most organizations now run hybrid: on-premises AD synced to Entra ID, with devic
 - [ ] Back up something, delete the original, restore it
 - [ ] Document the restore test as a case study
 
-### 10. Monitoring
-
-**Goal:** know when systems are sick before users do.
-
-- [ ] CPU, memory, disk, and network metrics
-- [ ] Uptime checks with Uptime Kuma
-- [ ] Metrics with Prometheus and dashboards with Grafana
-- [ ] Configure an alert that fires before a user reports the problem
-
-### 11. Docker
+### 10. Docker
 
 **Goal:** understand and run containerized services.
 
@@ -216,6 +206,15 @@ Most organizations now run hybrid: on-premises AD synced to Entra ID, with devic
 - [ ] Docker Compose
 - [ ] Deploy Nginx, Grafana, and Uptime Kuma with Compose
 - [ ] Store the Compose files in this repository (`docker/`)
+
+### 11. Monitoring
+
+**Goal:** know when systems are sick before users do.
+
+- [ ] CPU, memory, disk, and network metrics
+- [ ] Uptime checks with Uptime Kuma
+- [ ] Metrics with Prometheus and dashboards with Grafana
+- [ ] Configure an alert that fires before a user reports the problem
 
 ---
 
