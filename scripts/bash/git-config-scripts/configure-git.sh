@@ -72,19 +72,6 @@ Host github.com
     IdentityFile $AUTH_KEY
     IdentitiesOnly yes
 
-Host gitlab.com
-    HostName gitlab.com
-    User git
-    IdentityFile $AUTH_KEY
-    IdentitiesOnly yes
-
-Host git.wyrmnet.link
-    HostName git.wyrmnet.link
-    Port 222
-    User git
-    IdentityFile $AUTH_KEY
-    IdentitiesOnly yes
-
 # END SYSADMIN-NOTES GIT CONFIG
 EOF
 

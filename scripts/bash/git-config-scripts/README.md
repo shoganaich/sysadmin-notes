@@ -9,7 +9,7 @@ They cover the basic global Git config, SSH authentication, SSH commit signing, 
 | Script | Purpose |
 |---|---|
 | `configure-git.sh` | Configures global Git identity, SSH authentication, SSH commit signing, and Git defaults |
-| `configure-remotes.sh` | Configures the GitHub, GitLab, and Forgejo remotes for `sysadmin-notes` |
+| `configure-remotes.sh` | Configures the GitHub remote for `sysadmin-notes` |
 
 ## Requirements
 
@@ -36,7 +36,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_gitauth -C "git authentication"
 ssh-keygen -t ed25519 -f ~/.ssh/id_gitsigh -C "git signing"
 ```
 
-Then add the public keys to each Git host: the authentication key as an SSH key, and the signing key as a signing key.
+Then add the public keys to GitHub: the authentication key as an authentication key, and the signing key as a signing key.
 
 ## Usage
 
@@ -67,13 +67,12 @@ cd ~/gitrepos/sysadmin-notes
 | `rerere.enabled` | `true` | Reuse recorded conflict resolutions |
 | `color.ui` | `auto` | Coloured output in the terminal |
 
-## Pushing to all remotes
+## Pushing
 
 ```bash
-git push github main && git push gitlab main && git push forgejo main
+git push origin main
 ```
 
 ## Notes
 
-- The Forgejo instance uses SSH on port `222`, which is set in the SSH config block.
 - The scripts contain my own name, email, and remote URLs. Change the variables at the top of each script before using them for another account.

@@ -9,21 +9,17 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 GITHUB_REMOTE="git@github.com:shoganaich/sysadmin-notes.git"
-GITLAB_REMOTE="git@gitlab.com:shoganaich/sysadmin-notes.git"
-FORGEJO_REMOTE="git@git.wyrmnet.link:shoganaich/sysadmin-notes.git"
 
 echo "Configuring Git remotes..."
 
-# Remove existing remotes if present
+# Remove existing remotes if present (github, gitlab and forgejo are old remote names no longer used)
 git remote remove origin 2>/dev/null || true
 git remote remove github 2>/dev/null || true
 git remote remove gitlab 2>/dev/null || true
 git remote remove forgejo 2>/dev/null || true
 
-# Add remotes
-git remote add github "$GITHUB_REMOTE"
-git remote add gitlab "$GITLAB_REMOTE"
-git remote add forgejo "$FORGEJO_REMOTE"
+# Add remote
+git remote add origin "$GITHUB_REMOTE"
 
 echo
 echo "Remotes configured:"
@@ -33,13 +29,4 @@ echo
 echo "Done."
 echo
 echo "Push to GitHub:"
-echo "  git push github main"
-echo
-echo "Push to GitLab:"
-echo "  git push gitlab main"
-echo
-echo "Push to Forgejo:"
-echo "  git push forgejo main"
-echo
-echo "Push to all external remotes:"
-echo "  git push github main && git push gitlab main && git push forgejo main"
+echo "  git push origin main"
