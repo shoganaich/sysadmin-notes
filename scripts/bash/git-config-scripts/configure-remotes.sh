@@ -21,6 +21,16 @@ git remote remove forgejo 2>/dev/null || true
 # Add remote
 git remote add origin "$GITHUB_REMOTE"
 
+# Removing the remote also removes main's upstream, so set it again
+echo "Fetching origin..."
+git fetch origin
+
+if git show-ref --verify --quiet refs/heads/main && git show-ref --verify --quiet refs/remotes/origin/main; then
+    git branch --set-upstream-to=origin/main main
+else
+    echo "WARNING: main or origin/main not found, upstream not set."
+fi
+
 echo
 echo "Remotes configured:"
 git remote -v
