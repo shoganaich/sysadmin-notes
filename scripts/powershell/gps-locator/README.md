@@ -67,7 +67,7 @@ gps-locator.bat
 Enter the hostname when prompted:
 
 ```text
-Host (ou Q para sair): COMPUTER-01
+Host (or Q to exit): COMPUTER-01
 ```
 
 If valid GPS information is found, the script displays the converted coordinates and opens the location in Google Maps.

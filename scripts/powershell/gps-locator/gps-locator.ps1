@@ -3,17 +3,17 @@
     [string]$machine
 )
 
-# Caminho local do log NMEA no computador remoto. Alterar para o caminho real.
+# Local path for log on the remote computer (C:\Path\To\gps.log).
 $LogPath = "C:\Path\To\gps.log"
 
-# Converte para caminho de partilha administrativa (C:\... -> \\maquina\C$\...).
+# Convert to administrative share path (C:\... -> \\machine\C$\...).
 $Log = "\\$machine\" + ($LogPath -replace '^([A-Za-z]):', '$1$')
 
-# Numero de linhas do fim do log a analisar.
+# Number of lines from the end of the log to analyze.
 $TailLines = 10
 
 if (!(Test-Path $Log)) {
-    Write-Host "Log nao encontrado: $Log" -ForegroundColor Red
+    Write-Host "Log file not found: $Log" -ForegroundColor Red
     exit 1
 }
 
@@ -62,32 +62,32 @@ $Linha = Get-Content $Log -Tail $TailLines |
          Select-Object -Last 1
 
 if (-not $Linha) {
-    Write-Host "Nenhuma linha GPRMC/GNRMC encontrada nas ultimas $TailLines linhas." -ForegroundColor Red
+    Write-Host "No GPRMC/GNRMC lines found in the last $TailLines lines." -ForegroundColor Red
     exit 1
 }
 
-# Remove o que vem antes da frase NMEA e o checksum (*hh) no fim.
+# Remove the part that comes before the NMEA sentence and the checksum (*hh) at the end.
 $Frase = $Linha.Substring($Linha.IndexOf('$')) -replace '\*[0-9A-Fa-f]{2}\s*$', ''
 $Campos = $Frase.Split(',')
 
 if ($Campos.Count -lt 7) {
-    Write-Host "Linha RMC invalida." -ForegroundColor Red
+    Write-Host "Invalid RMC line." -ForegroundColor Red
     exit 1
 }
 
 # Campo 2 = estado: A = posicao valida, V = sem fix (coordenadas nao fiaveis).
 if ($Campos[2] -ne 'A') {
-    Write-Host "O GPS nao tem uma posicao valida (estado '$($Campos[2])', sem fix)." -ForegroundColor Red
-    Write-Host "Linha: $Linha" -ForegroundColor DarkGray
+    Write-Host "The GPS does not have a valid position (state '$($Campos[2])', no fix)." -ForegroundColor Red
+    Write-Host "Line: $Linha" -ForegroundColor DarkGray
     exit 1
 }
 
 if ([string]::IsNullOrWhiteSpace($Campos[3]) -or [string]::IsNullOrWhiteSpace($Campos[5])) {
-    Write-Host "A linha RMC nao contem coordenadas." -ForegroundColor Red
+    Write-Host "The RMC line does not contain coordinates." -ForegroundColor Red
     exit 1
 }
 
-# Hora UTC (campo 1, hhmmss) e data (campo 9, ddmmyy) do ultimo fix, se existirem.
+# UTC time (field 1, hhmmss) and date (field 9, ddmmyy) of the last fix, if available.
 $HoraFix = "N/A"
 if ($Campos.Count -gt 9 -and $Campos[1].Length -ge 6 -and $Campos[9].Length -eq 6) {
     $HoraFix = "{0}-{1}-20{2} {3}:{4}:{5} UTC" -f `
@@ -104,8 +104,7 @@ catch {
     exit 1
 }
 
-# IMPORTANTE:
-# Forca ponto decimal mesmo em Windows PT-PT.
+# Important: Use InvariantCulture to ensure the decimal point is used, regardless of the system's locale settings.
 $LatText = $Lat.ToString(
     "0.######",
     [System.Globalization.CultureInfo]::InvariantCulture
@@ -118,12 +117,10 @@ $LonText = $Lon.ToString(
 
 $Url = "https://www.google.com/maps?q=$LatText,$LonText"
 
-# ============================================================
-# HTML INTERMEDIARIO
+# INTERMEDIATE HTML
 # PowerShell -> Explorer -> Edge/default HTML handler -> Maps
-# ============================================================
 
-# Cria o HTML na mesma pasta onde está este .ps1
+# Crete a temporary HTML file that redirects to Google Maps with the coordinates.
 $HtmlDir = $PSScriptRoot
 
 if ([string]::IsNullOrWhiteSpace($HtmlDir)) {
@@ -132,7 +129,7 @@ if ([string]::IsNullOrWhiteSpace($HtmlDir)) {
 
 $HtmlPath = Join-Path $HtmlDir "GPSLocator.html"
 
-# Codifica caracteres especiais para uso seguro dentro do HTML.
+# Convert the URL to HTML frendly format (escape special characters).
 $HtmlUrl = [System.Net.WebUtility]::HtmlEncode($Url)
 
 $Html = @"
@@ -171,14 +168,14 @@ Write-Host ""
 Write-Host "HTML: $HtmlPath" -ForegroundColor DarkGray
 
 
-# Fluxo pretendido:
-# explorer.exe -> associacao .html -> browser predefinido -> URL Google Maps
+# Default workflow
+# explorer.exe -> temporary .html -> default HTML handler -> URL Google Maps
 try {
     Start-Process -FilePath "$env:WINDIR\explorer.exe" -ArgumentList "`"$HtmlPath`""
-    Write-Host "Aberto no browser predefinido." -ForegroundColor Green
+    Write-Host "Open on default browser." -ForegroundColor Green
 }
 catch {
-    Write-Host "Erro ao abrir o HTML com Explorer: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Error in opening HTML with Explorer: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 

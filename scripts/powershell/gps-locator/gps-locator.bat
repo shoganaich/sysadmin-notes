@@ -2,17 +2,17 @@
 :menu
 cls
 
-set /p host=Host (^ou Q para sair^): 
+set /p host=Host (or Q to quit): 
 
 if /I "%host%"=="Q" exit
 
 echo.
-echo A verificar conectividade com %host%...
+echo Verifying connectivity with %host%...
 ping -n 1 %host% >nul
 
 if errorlevel 1 (
     echo.
-    echo [ERRO] Host %host% indisponivel ou sem resposta ao ping.
+    echo [ERROR] Host %host% unavailable or not responding to ping.
     echo.
     timeout /t 3 /nobreak
     goto menu
@@ -26,7 +26,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0gps-locator.ps1" "
 
 echo.
 echo =====================================
-echo Prima uma tecla para procurar outro host...
+echo Press any key to search for another host...
 echo =====================================
 pause >nul
 
